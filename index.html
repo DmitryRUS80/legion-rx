@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#151515">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Legion RX">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <title>Legion RallyCross Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="header">
+    <div>
+        <h1>Legion RallyCross Manager</h1>
+        <div class="version">Version 1.2 PWA</div>
+    </div>
+    <div class="headerActions">
+        <button id="exportRace" class="secondaryButton">Экспорт JSON</button>
+        <button id="clearRace" class="secondaryButton dangerButton">Новая гонка</button>
+    </div>
+</header>
+
+<div id="installHelp" class="installHelp hidden"></div>
+
+<main>
+    <section class="card">
+        <h2>Создать соревнование</h2>
+        <label for="eventName">Название соревнования</label>
+        <input id="eventName" type="text" placeholder="Legion CUP RX — этап 1">
+
+        <label for="qualifyingCount">Количество квалификаций</label>
+        <select id="qualifyingCount">
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+        </select>
+
+        <button id="createRace">Создать соревнование</button>
+    </section>
+
+    <section class="card">
+        <h2>Регистрация пилотов</h2>
+        <div class="pilotAdd">
+            <input id="pilotName" type="text" placeholder="Фамилия Имя">
+            <button id="addPilot">Добавить</button>
+        </div>
+        <div id="pilotCounter">Пилотов: 0</div>
+        <div class="tableWrap">
+            <table id="pilotTable">
+                <thead><tr><th>№</th><th>Пилот</th><th></th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <button id="nextStep" disabled>Перейти к квалификациям</button>
+    </section>
+
+    <section id="qualifyingBlock" class="card hidden">
+        <h2>Квалификации</h2>
+        <div id="qualifyingContent"></div>
+        <hr>
+        <h2>Общий рейтинг</h2>
+        <div id="standings">Пока нет результатов.</div>
+    </section>
+
+    <section id="finalsSection" class="card hidden">
+        <h2>Финалы</h2>
+        <p class="sectionHint">В финалах очки не начисляются. Места определяют переход в следующий финал и итог соревнования.</p>
+        <div id="finalsExplanation"></div>
+        <div id="finalsBlock"></div>
+    </section>
+
+    <section id="protocolSection" class="card hidden">
+        <h2>Итоговый протокол</h2>
+        <div id="protocolBlock"></div>
+    </section>
+</main>
+
+<footer>Legion RC Penza</footer>
+
+<script src="data.js"></script>
+<script src="score.js"></script>
+<script src="qualifying.js"></script>
+<script src="finals.js"></script>
+<script src="app.js"></script>
+<script src="pwa.js"></script>
+</body>
+</html>

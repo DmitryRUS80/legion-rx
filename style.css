@@ -1,0 +1,546 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    color-scheme: dark;
+    --bg: #151515;
+    --panel: #222;
+    --panel-2: #2b2b2b;
+    --line: #444;
+    --red: #e53935;
+    --red-light: #ff6b6b;
+    --text: #fff;
+    --muted: #aaa;
+    --green: #44c767;
+}
+
+body {
+    min-height: 100vh;
+    padding: 20px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    max-width: 1100px;
+    margin: 0 auto 25px;
+}
+
+.header h1 {
+    color: #ff4040;
+    font-size: 34px;
+}
+
+.version {
+    margin-top: 8px;
+    color: #999;
+}
+
+.headerActions {
+    display: flex;
+    gap: 10px;
+}
+
+main {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.card,
+.heatCard,
+.finalCard {
+    margin-bottom: 25px;
+    padding: 20px;
+    border-radius: 12px;
+    background: var(--panel);
+    box-shadow: 0 0 15px rgba(0, 0, 0, .35);
+}
+
+.card h2,
+.roundBlock > h2,
+.finalCard h2 {
+    margin-bottom: 15px;
+    color: #ff5555;
+}
+
+.roundBlock {
+    margin-top: 28px;
+}
+
+.heatCard {
+    margin: 14px 0;
+    background: #292929;
+}
+
+.heatHeader,
+.finalTitleRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.heatHeader span,
+.sectionHint {
+    color: var(--muted);
+}
+
+label {
+    display: block;
+    margin: 15px 0 6px;
+    color: #ccc;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: #333;
+    color: white;
+    font-size: 16px;
+}
+
+input:focus,
+select:focus {
+    border-color: var(--red-light);
+    outline: none;
+}
+
+button {
+    width: 100%;
+    margin-top: 15px;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    background: #d32f2f;
+    color: white;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: .2s;
+}
+
+button:hover:not(:disabled) {
+    background: #f44336;
+}
+
+button:disabled {
+    cursor: default;
+    opacity: .45;
+}
+
+.secondaryButton {
+    width: auto;
+    margin: 0;
+    padding: 10px 14px;
+    background: #444;
+    font-size: 14px;
+}
+
+.dangerButton {
+    background: #702020;
+}
+
+.pilotAdd {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.pilotAdd input {
+    flex: 1;
+}
+
+.pilotAdd button {
+    width: 180px;
+    margin: 0;
+}
+
+#pilotCounter {
+    margin: 15px 0 10px;
+    color: #ff8080;
+    font-size: 18px;
+}
+
+.tableWrap {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    margin-top: 10px;
+    border-collapse: collapse;
+}
+
+thead {
+    background: #2f2f2f;
+}
+
+th,
+td {
+    padding: 12px;
+    border-top: 1px solid var(--line);
+    text-align: left;
+    white-space: nowrap;
+}
+
+th {
+    color: #ff8080;
+}
+
+.points {
+    color: var(--muted);
+}
+
+.removeButton {
+    width: 90px;
+    margin: 0;
+    padding: 8px;
+    background: #555;
+}
+
+.hidden {
+    display: none;
+}
+
+hr {
+    margin: 28px 0;
+    border: 0;
+    border-top: 1px solid #444;
+}
+
+.finalCard {
+    margin-top: 20px;
+    background: #272727;
+}
+
+.lockedFinal {
+    opacity: .58;
+}
+
+.activeFinal {
+    border: 1px solid rgba(229, 57, 53, .65);
+}
+
+.statusBadge {
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #3a3a3a;
+    color: #ddd;
+    font-size: 13px;
+}
+
+.startDirection {
+    margin: 18px 0 8px;
+    color: var(--muted);
+    text-align: center;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+.finalGrid {
+    width: min(520px, 100%);
+    margin: 0 auto 28px;
+}
+
+.finalRow {
+    display: flex;
+    justify-content: center;
+    gap: 70px;
+    margin: 16px 0;
+}
+
+.finalRow.single {
+    justify-content: center;
+}
+
+.finalSlot {
+    width: 170px;
+    min-height: 76px;
+    padding: 10px;
+    border: 2px solid var(--red);
+    border-radius: 10px;
+    background: var(--panel-2);
+    text-align: center;
+    box-shadow: 0 0 12px rgba(0, 0, 0, .35);
+}
+
+.finalPlace {
+    color: #ff4040;
+    font-size: 26px;
+    font-weight: bold;
+}
+
+.finalPilot {
+    margin-top: 8px;
+    overflow-wrap: anywhere;
+    font-size: 15px;
+}
+
+.podium {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.podiumPlace {
+    padding: 18px 10px;
+    border-radius: 10px;
+    background: #2b2b2b;
+    text-align: center;
+    font-weight: bold;
+}
+
+.podiumPlace span {
+    display: block;
+    margin-bottom: 8px;
+    color: #ff5555;
+    font-size: 30px;
+}
+
+.place1 {
+    border: 2px solid #d6b53b;
+}
+
+footer {
+    margin-top: 35px;
+    color: #666;
+    text-align: center;
+}
+
+@media (max-width: 700px) {
+    body {
+        padding: 12px;
+    }
+
+    .header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .header h1 {
+        font-size: 26px;
+    }
+
+    .headerActions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .secondaryButton {
+        width: 100%;
+    }
+
+    .pilotAdd {
+        flex-direction: column;
+    }
+
+    .pilotAdd button {
+        width: 100%;
+    }
+
+    button {
+        padding: 16px;
+        font-size: 17px;
+    }
+
+    input,
+    select {
+        font-size: 17px;
+    }
+
+    .finalRow {
+        gap: 16px;
+    }
+
+    .finalSlot {
+        width: 125px;
+        min-height: 70px;
+    }
+
+    .podium {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* PWA и пояснения финалов */
+.installHelp {
+    max-width: 1100px;
+    margin: 0 auto 18px;
+    padding: 13px 15px;
+    border: 1px solid rgba(229, 57, 53, .55);
+    border-radius: 10px;
+    background: #242424;
+    color: #ddd;
+    line-height: 1.45;
+}
+
+.finalsGuide {
+    margin: 16px 0 24px;
+    padding: 16px;
+    border-radius: 12px;
+    background: #1b1b1b;
+    border: 1px solid #3e3e3e;
+}
+
+.finalsGuide h3 {
+    margin-bottom: 12px;
+    color: #ff8080;
+}
+
+.finalsGuide > p {
+    margin-bottom: 12px;
+    color: #ddd;
+}
+
+.routeFlow {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.routeStep {
+    display: flex;
+    min-width: 145px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #303030;
+    flex-direction: column;
+    text-align: center;
+}
+
+.routeStep strong {
+    color: #ff5f5f;
+    font-size: 23px;
+}
+
+.routeStep span {
+    margin-top: 5px;
+    color: #bbb;
+    font-size: 13px;
+}
+
+.routeMain {
+    border: 1px solid rgba(229, 57, 53, .75);
+}
+
+.routeArrow {
+    align-self: center;
+    color: #ff5555;
+    font-size: 24px;
+}
+
+.guideNote {
+    margin: 12px 0 0 !important;
+    color: #999 !important;
+    font-size: 13px;
+}
+
+.finalSubtitle {
+    color: #aaa;
+    font-size: 13px;
+}
+
+.finalRuleBox {
+    display: grid;
+    grid-template-columns: minmax(130px, auto) 1fr;
+    gap: 12px;
+    margin: 14px 0;
+    padding: 12px;
+    border-radius: 9px;
+    background: #202020;
+}
+
+.finalRuleBox strong {
+    color: #ff6b6b;
+}
+
+.finalRuleBox span {
+    color: #bbb;
+    line-height: 1.4;
+}
+
+.finishInputTitle {
+    margin-top: 18px;
+    color: #ddd;
+    font-weight: bold;
+}
+
+.savedFinalResult {
+    margin-top: 18px;
+    padding: 14px;
+    border-radius: 10px;
+    background: #202020;
+}
+
+.savedFinalResult h3 {
+    margin-bottom: 10px;
+    color: #ff8080;
+}
+
+.savedResultRow {
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    border-top: 1px solid #393939;
+}
+
+.savedResultRow:first-of-type {
+    border-top: 0;
+}
+
+.savedResultRow.advances {
+    color: #fff;
+    background: rgba(68, 199, 103, .08);
+}
+
+.resultPosition {
+    color: #ff5555;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.resultAction {
+    color: var(--green);
+    font-size: 13px;
+    font-weight: bold;
+}
+
+@media (max-width: 700px) {
+    .routeFlow {
+        flex-direction: column;
+    }
+
+    .routeArrow {
+        transform: none;
+    }
+
+    .finalRuleBox {
+        grid-template-columns: 1fr;
+    }
+
+    .savedResultRow {
+        grid-template-columns: 38px 1fr;
+    }
+
+    .resultAction {
+        grid-column: 2;
+        padding-bottom: 8px;
+    }
+}
