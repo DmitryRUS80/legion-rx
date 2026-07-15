@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#151515">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,10 +16,12 @@
 <header class="header">
     <div>
         <h1>Legion RallyCross Manager</h1>
-        <div class="version">Version 1.2 PWA</div>
+        <div class="version">Version 1.3 PWA</div>
     </div>
     <div class="headerActions">
-        <button id="exportRace" class="secondaryButton">Экспорт JSON</button>
+        <button id="showRace" class="secondaryButton">Гонка</button>
+        <button id="showArchive" class="secondaryButton">Архив</button>
+        <button id="exportRace" class="secondaryButton">JSON</button>
         <button id="clearRace" class="secondaryButton dangerButton">Новая гонка</button>
     </div>
 </header>
@@ -27,17 +29,48 @@
 <div id="installHelp" class="installHelp hidden"></div>
 
 <main>
+<div id="raceView">
     <section class="card">
         <h2>Создать соревнование</h2>
+
         <label for="eventName">Название соревнования</label>
         <input id="eventName" type="text" placeholder="Legion CUP RX — этап 1">
 
-        <label for="qualifyingCount">Количество квалификаций</label>
-        <select id="qualifyingCount">
-            <option value="3">3</option>
-            <option value="4" selected>4</option>
-            <option value="5">5</option>
-        </select>
+        <div class="formGrid">
+            <div>
+                <label for="clubName">Клуб-организатор</label>
+                <input id="clubName" type="text" placeholder="Legion RC Penza">
+            </div>
+            <div>
+                <label for="eventDate">Дата</label>
+                <input id="eventDate" type="date">
+            </div>
+            <div>
+                <label for="eventLocation">Место проведения</label>
+                <input id="eventLocation" type="text" placeholder="Пенза, зал / трасса">
+            </div>
+            <div>
+                <label for="eventStatus">Статус</label>
+                <select id="eventStatus">
+                    <option value="official">Официальное</option>
+                    <option value="club" selected>Клубное</option>
+                    <option value="training">Тренировочное</option>
+                    <option value="test">Тестовое</option>
+                </select>
+            </div>
+            <div>
+                <label for="qualifyingCount">Количество квалификаций</label>
+                <select id="qualifyingCount">
+                    <option value="3">3</option>
+                    <option value="4" selected>4</option>
+                    <option value="5">5</option>
+                </select>
+            </div>
+            <label class="checkboxLabel">
+                <input id="publishAllowed" type="checkbox">
+                Разрешить публикацию результата
+            </label>
+        </div>
 
         <button id="createRace">Создать соревнование</button>
     </section>
@@ -68,15 +101,37 @@
 
     <section id="finalsSection" class="card hidden">
         <h2>Финалы</h2>
-        <p class="sectionHint">В финалах очки не начисляются. Места определяют переход в следующий финал и итог соревнования.</p>
+        <p class="sectionHint">Финалы не меняют квалификационные очки. Они формируют стартовую сетку главного финала и итоговый протокол.</p>
         <div id="finalsExplanation"></div>
         <div id="finalsBlock"></div>
     </section>
 
     <section id="protocolSection" class="card hidden">
-        <h2>Итоговый протокол</h2>
+        <div class="sectionTitleRow">
+            <h2>Итоговый протокол</h2>
+            <div class="protocolActions">
+                <button id="printProtocol" class="secondaryButton">Печать / PDF</button>
+                <button id="saveProtocolImage" class="secondaryButton">Скачать PNG</button>
+                <button id="archiveRace" class="secondaryButton">Сохранить в архив</button>
+            </div>
+        </div>
         <div id="protocolBlock"></div>
     </section>
+</div>
+
+<section id="archiveView" class="card hidden">
+    <div class="sectionTitleRow">
+        <h2>Архив соревнований</h2>
+        <select id="archiveFilter" class="compactSelect">
+            <option value="all">Все</option>
+            <option value="official">Официальные</option>
+            <option value="club">Клубные</option>
+            <option value="training">Тренировочные</option>
+            <option value="test">Тестовые</option>
+        </select>
+    </div>
+    <div id="archiveList"></div>
+</section>
 </main>
 
 <footer>Legion RC Penza</footer>

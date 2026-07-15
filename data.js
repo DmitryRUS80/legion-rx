@@ -1,20 +1,24 @@
-/*
-===========================================
-Legion RallyCross Manager
-Version 1.1
-data.js
-===========================================
-*/
+/* Legion RallyCross Manager v1.3 */
 
 const RaceData = {
+    id: "",
     eventName: "",
+    clubName: "Legion RC Penza",
+    eventDate: "",
+    eventLocation: "",
+    eventStatus: "club",
+    publishAllowed: false,
     qualifyingCount: 4,
     pilots: [],
     heats: [],
     finals: [],
     finalProtocol: [],
-    stage: "setup"
+    stage: "setup",
+    createdAt: "",
+    updatedAt: ""
 };
+
+const EVENT_POINTS = [25, 20, 16, 13, 11, 10];
 
 class Pilot {
     constructor(name) {
@@ -51,4 +55,10 @@ function resetRaceResults() {
         pilot.points = 0;
         pilot.finalResults = [];
     });
+}
+
+function touchRace() {
+    if (!RaceData.id) RaceData.id = `race-${Date.now()}`;
+    if (!RaceData.createdAt) RaceData.createdAt = new Date().toISOString();
+    RaceData.updatedAt = new Date().toISOString();
 }

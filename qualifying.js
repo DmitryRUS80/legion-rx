@@ -1,10 +1,4 @@
-/*
-==========================================
-Legion RallyCross Manager
-Version 1.2
-qualifying.js
-==========================================
-*/
+/* Legion RallyCross Manager v1.3 */
 
 function getHeatCount(pilotCount) {
     if (pilotCount <= 6) return 1;
@@ -23,7 +17,7 @@ function buildSnakeHeats(pilots, heatCount, round) {
         heats[heatIndex].push(pilot);
     });
 
-    return heats.filter(heat => heat.length > 0);
+    return heats.filter(Boolean).filter(heat => heat.length);
 }
 
 function createQualifyingData() {
@@ -32,9 +26,7 @@ function createQualifyingData() {
     const heatCount = getHeatCount(pilots.length);
 
     for (let round = 1; round <= RaceData.qualifyingCount; round += 1) {
-        const heats = buildSnakeHeats(pilots, heatCount, round);
-
-        heats.forEach((heatPilots, heatIndex) => {
+        buildSnakeHeats(pilots, heatCount, round).forEach((heatPilots, heatIndex) => {
             RaceData.heats.push({
                 qualifying: round,
                 heat: heatIndex + 1,
@@ -49,147 +41,124 @@ function generateQualifying() {
     RaceData.finals = [];
     RaceData.finalProtocol = [];
     RaceData.stage = "qualifying";
-
     RaceData.pilots.forEach(pilot => {
         pilot.qualifying = [];
         pilot.best3 = 0;
         pilot.points = 0;
         pilot.finalResults = [];
     });
-
     createQualifyingData();
     renderQualifying();
     saveToBrowser();
-
     document.getElementById("qualifyingBlock").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function resultOptions(count, selectedValue = "") {
+    let html = `<option value="">—</option>`;
+    for (let place = 1; place <= count; place += 1) {
+        html += `<option value="${place}" ${String(selectedValue) === String(place) ? "selected" : ""}>${place}</option>`;
+    }
+    ["DNF", "DNS", "DSQ"].forEach(status => {
+        html += `<option value="${status}" ${selectedValue === status ? "selected" : ""}>${status}</option>`;
+    });
+    return html;
+}
+
+function refreshUniquePlaces(selector) {
+    const selects = [...document.querySelectorAll(selector)];
+    const chosen = new Map();
+    selects.forEach(select => {
+        const value = select.value;
+        if (/^\d+$/.test(value)) chosen.set(value, select);
+    });
+
+    selects.forEach(select => {
+        [...select.options].forEach(option => {
+            if (!/^\d+$/.test(option.value)) return;
+            option.disabled = chosen.has(option.value) && chosen.get(option.value) !== select;
+        });
+    });
+}
+
+function bindUniquePlaceSelectors() {
+    document.querySelectorAll(".finishPlace").forEach(select => {
+        select.addEventListener("change", () => {
+            refreshUniquePlaces(`.finishPlace[data-q="${select.dataset.q}"][data-heat="${select.dataset.heat}"]`);
+        });
+    });
+
+    const groups = new Set([...document.querySelectorAll(".finishPlace")].map(select => `${select.dataset.q}:${select.dataset.heat}`));
+    groups.forEach(group => {
+        const [round, heat] = group.split(":");
+        refreshUniquePlaces(`.finishPlace[data-q="${round}"][data-heat="${heat}"]`);
+    });
 }
 
 function renderQualifying() {
     const block = document.getElementById("qualifyingBlock");
     const content = document.getElementById("qualifyingContent");
-
     block.classList.remove("hidden");
     document.getElementById("finalsSection").classList.add("hidden");
     document.getElementById("protocolSection").classList.add("hidden");
     content.innerHTML = "";
 
     for (let round = 1; round <= RaceData.qualifyingCount; round += 1) {
-        const roundHeats = RaceData.heats
-            .filter(heat => heat.qualifying === round)
-            .sort((a, b) => a.heat - b.heat);
-
-        let roundHtml = `<section class="roundBlock"><h2>Квалификация ${round}</h2>`;
+        const roundHeats = RaceData.heats.filter(heat => heat.qualifying === round).sort((a,b) => a.heat-b.heat);
+        let html = `<section class="roundBlock"><h2>Квалификация ${round}</h2>`;
 
         roundHeats.forEach(heatData => {
-            const heatPilots = heatData.pilots.map(getPilot).filter(Boolean);
-            const savedLabel = heatData.saved ? "✔ Заезд сохранён" : "Сохранить заезд";
+            const pilots = heatData.pilots.map(getPilot).filter(Boolean);
+            html += `<div class="heatCard"><div class="heatHeader"><h3>Заезд ${heatData.heat}</h3><span>${pilots.length} пилотов</span></div><div class="tableWrap"><table><thead><tr><th>Результат</th><th>Пилот</th></tr></thead><tbody>`;
 
-            roundHtml += `
-                <div class="heatCard" id="heat_q${round}_h${heatData.heat}">
-                    <div class="heatHeader">
-                        <h3>Заезд ${heatData.heat}</h3>
-                        <span>${heatPilots.length} пилотов</span>
-                    </div>
-                    <div class="tableWrap">
-                    <table>
-                        <thead><tr><th>Место</th><th>Пилот</th></tr></thead>
-                        <tbody>`;
-
-            heatPilots.forEach(pilot => {
-                const savedResult = pilot.qualifying.find(result => result.round === round);
-                roundHtml += `
-                    <tr>
-                        <td>
-                            <select class="finishPlace"
-                                data-id="${pilot.id}"
-                                data-q="${round}"
-                                data-heat="${heatData.heat}"
-                                ${heatData.saved ? "disabled" : ""}>
-                                <option value="">—</option>
-                                ${heatPilots.map((_, index) => {
-                                    const place = index + 1;
-                                    return `<option value="${place}" ${savedResult?.place === place ? "selected" : ""}>${place}</option>`;
-                                }).join("")}
-                            </select>
-                        </td>
-                        <td>${escapeHtml(pilot.name)}</td>
-                    </tr>`;
+            pilots.forEach(pilot => {
+                const saved = pilot.qualifying.find(result => result.round === round);
+                const value = saved ? (saved.status === "FIN" ? saved.place : saved.status) : "";
+                html += `<tr><td><select class="finishPlace" data-id="${pilot.id}" data-q="${round}" data-heat="${heatData.heat}" ${heatData.saved ? "disabled" : ""}>${resultOptions(pilots.length, value)}</select></td><td>${escapeHtml(pilot.name)}</td></tr>`;
             });
 
-            roundHtml += `
-                        </tbody>
-                    </table>
-                    </div>
-                    <button id="save_q${round}_h${heatData.heat}"
-                        onclick="saveHeat(${round}, ${heatData.heat})"
-                        ${heatData.saved ? "disabled" : ""}>
-                        ${savedLabel}
-                    </button>
-                </div>`;
+            html += `</tbody></table></div><button id="save_q${round}_h${heatData.heat}" onclick="saveHeat(${round},${heatData.heat})" ${heatData.saved ? "disabled" : ""}>${heatData.saved ? "✔ Заезд сохранён" : "Сохранить заезд"}</button></div>`;
         });
 
-        roundHtml += `</section>`;
-        content.insertAdjacentHTML("beforeend", roundHtml);
+        content.insertAdjacentHTML("beforeend", `${html}</section>`);
     }
 
+    bindUniquePlaceSelectors();
     drawStandings();
 }
 
 function saveHeat(round, heatNumber) {
-    const heatData = RaceData.heats.find(
-        heat => heat.qualifying === round && heat.heat === heatNumber
-    );
+    const heatData = RaceData.heats.find(heat => heat.qualifying === round && heat.heat === heatNumber);
+    if (!heatData || heatData.saved) return;
 
-    if (!heatData) {
-        alert("Заезд не найден.");
+    const selects = [...document.querySelectorAll(`.finishPlace[data-q="${round}"][data-heat="${heatNumber}"]`)];
+    if (selects.some(select => !select.value)) {
+        alert("Укажите результат каждого пилота.");
         return;
     }
 
-    if (heatData.saved) {
-        alert("Этот заезд уже сохранён.");
-        return;
-    }
-
-    const selects = [...document.querySelectorAll(
-        `.finishPlace[data-q="${round}"][data-heat="${heatNumber}"]`
-    )];
-
-    const places = selects.map(select => Number(select.value));
-    const expected = selects.map((_, index) => index + 1);
-
-    if (places.some(place => !Number.isInteger(place) || place < 1)) {
-        alert("Заполните место каждого пилота.");
-        return;
-    }
-
-    const sortedPlaces = [...places].sort((a, b) => a - b);
-    if (sortedPlaces.some((place, index) => place !== expected[index])) {
-        alert(`Места должны быть без повторений: от 1 до ${selects.length}.`);
+    const places = selects.map(select => select.value).filter(value => /^\d+$/.test(value));
+    if (new Set(places).size !== places.length) {
+        alert("Финишные места не должны повторяться.");
         return;
     }
 
     selects.forEach(select => {
-        const pilot = getPilot(select.dataset.id);
-        savePilotResult(pilot, round, heatNumber, Number(select.value));
+        const raw = select.value;
+        savePilotResult(getPilot(select.dataset.id), round, heatNumber, /^\d+$/.test(raw) ? Number(raw) : raw);
         select.disabled = true;
     });
 
     heatData.saved = true;
-
-    const button = document.getElementById(`save_q${round}_h${heatNumber}`);
-    button.disabled = true;
-    button.textContent = "✔ Заезд сохранён";
-
+    document.getElementById(`save_q${round}_h${heatNumber}`).disabled = true;
+    document.getElementById(`save_q${round}_h${heatNumber}`).textContent = "✔ Заезд сохранён";
     updateStandings();
     drawStandings();
     saveToBrowser();
 
-    const remaining = RaceData.heats.filter(heat => !heat.saved).length;
-    if (remaining === 0) {
+    if (RaceData.heats.every(heat => heat.saved)) {
         RaceData.stage = "finals";
-        const finalsSection = document.getElementById("finalsSection");
-        finalsSection.classList.remove("hidden");
+        document.getElementById("finalsSection").classList.remove("hidden");
         generateFinals();
-        finalsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("finalsSection").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 }

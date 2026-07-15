@@ -1,52 +1,43 @@
-/*
-==========================================
-Legion RallyCross Manager
-Version 1.2
-finals.js
-==========================================
-*/
+/* Legion RallyCross Manager v1.3 */
 
-function createFinal(name, pilots, order) {
-    return {
-        name,
-        order,
-        pilots: pilots.map(pilot => pilot.id),
-        result: [],
-        saved: false,
-        enabled: order === 1
-    };
+const LADDER_NAMES = ["B", "C", "D", "E", "F"];
+
+function createFinal(name, pilots, order, enabled = false) {
+    return { name, order, pilots: pilots.map(p => p.id || p), result: [], saved: false, enabled };
 }
 
 function generateFinals() {
     updateStandings();
     RaceData.finals = [];
     RaceData.finalProtocol = [];
-
     const pilots = [...RaceData.pilots];
-    const count = pilots.length;
 
-    if (count <= 6) {
-        RaceData.finals.push(createFinal("A1", pilots, 1));
-        RaceData.finals.push(createFinal("A2", pilots, 2));
+    if (pilots.length <= 6) {
+        RaceData.finals.push(createFinal("A1", pilots, 1, true));
+        RaceData.finals.push(createFinal("A2", [], 2, false));
     } else {
-        const directA = pilots.slice(0, 2);
-        const remaining = pilots.slice(2);
+        RaceData.finals.push(createFinal("B", pilots.slice(0, 4), 999, false));
+        let remaining = pilots.slice(4);
+        let index = 1;
 
-        if (remaining.length <= 6) {
-            RaceData.finals.push(createFinal("B", remaining, 1));
-            RaceData.finals.push(createFinal("A", directA, 2));
-        } else {
-            const initialB = remaining.slice(0, 4);
-            const initialC = remaining.slice(4);
-            RaceData.finals.push(createFinal("C", initialC, 1));
-            RaceData.finals.push(createFinal("B", initialB, 2));
-            RaceData.finals.push(createFinal("A", directA, 3));
+        while (remaining.length > 6) {
+            RaceData.finals.push(createFinal(LADDER_NAMES[index], remaining.slice(0, 4), 999 - index, false));
+            remaining = remaining.slice(4);
+            index += 1;
         }
+
+        const bottomName = LADDER_NAMES[index];
+        RaceData.finals.push(createFinal(bottomName, remaining, 999 - index, true));
+        RaceData.finals.push(createFinal("A", [], 1000, false));
     }
 
     drawFinalsExplanation();
     drawFinals();
     saveToBrowser();
+}
+
+function finalByName(name) {
+    return RaceData.finals.find(final => final.name === name);
 }
 
 function getFinalPilots(final) {
@@ -54,228 +45,100 @@ function getFinalPilots(final) {
 }
 
 function getFinalRule(final) {
-    if (final.name === "A1") {
-        return {
-            title: "Первый финальный заезд",
-            text: "Все пилоты едут A1. Результат A1 задаёт стартовый порядок A2.",
-            advance: "Все переходят в A2"
-        };
-    }
+    if (final.name === "A1") return { title: "Первый финальный заезд", text: "Все пилоты едут A1. Финишный порядок формирует сетку A2.", advance: "Все → A2" };
+    if (final.name === "A2") return { title: "Решающий финал", text: "Результат A2 определяет итог соревнования.", advance: "Итог" };
+    if (final.name === "A") return { title: "Главный финал", text: "Шесть пилотов стартуют в порядке результата B.", advance: "Итог" };
+    if (final.name === "B") return { title: "Финал B", text: "Все участники B переходят в A в финишном порядке.", advance: "Все → A" };
+    const higher = getHigherFinal(final.name);
+    return { title: `Отборочный финал ${final.name}`, text: `Два лучших переходят в финал ${higher?.name || "B"}.`, advance: `1–2 → ${higher?.name || "B"}` };
+}
 
-    if (final.name === "A2") {
-        return {
-            title: "Главный финальный заезд",
-            text: "Результат A2 определяет итоговые места соревнования.",
-            advance: "Определяет победителя"
-        };
-    }
-
-    if (final.name === "C") {
-        return {
-            title: "Нижний отборочный финал",
-            text: "Два первых пилота переходят в финал B. Остальные завершают соревнование согласно результату C.",
-            advance: "1–2 место → B"
-        };
-    }
-
-    if (final.name === "B") {
-        return {
-            title: "Отборочный финал",
-            text: "Два первых пилота переходят в финал A. Остальные завершают соревнование согласно результату B.",
-            advance: "1–2 место → A"
-        };
-    }
-
-    return {
-        title: "Главный финал",
-        text: "Результат финала A определяет итоговые места соревнования.",
-        advance: "Определяет победителя"
-    };
+function getHigherFinal(name) {
+    const finals = [...RaceData.finals].filter(f => !["A", "A1", "A2"].includes(f.name)).sort((a,b) => b.order-a.order);
+    const idx = finals.findIndex(f => f.name === name);
+    return idx <= 0 ? finalByName("B") : finals[idx - 1];
 }
 
 function drawFinalsExplanation() {
-    const container = document.getElementById("finalsExplanation");
-    if (!container) return;
-
-    const count = RaceData.pilots.length;
-    let html = `<div class="finalsGuide"><h3>Как проходят финалы</h3>`;
-
-    if (count <= 6) {
-        html += `
-            <div class="routeFlow">
-                <div class="routeStep"><strong>A1</strong><span>первый заезд всех пилотов</span></div>
-                <div class="routeArrow">↓</div>
-                <div class="routeStep routeMain"><strong>A2</strong><span>решающий заезд и итоговые места</span></div>
-            </div>`;
-    } else if (RaceData.finals.some(final => final.name === "C")) {
-        html += `
-            <p>Пилоты №1 и №2 квалификации уже находятся в A.</p>
-            <div class="routeFlow">
-                <div class="routeStep"><strong>C</strong><span>два лучших проходят дальше</span></div>
-                <div class="routeArrow">↓</div>
-                <div class="routeStep"><strong>B</strong><span>два лучших проходят дальше</span></div>
-                <div class="routeArrow">↓</div>
-                <div class="routeStep routeMain"><strong>A</strong><span>главный финал</span></div>
-            </div>`;
-    } else {
-        html += `
-            <p>Пилоты №1 и №2 квалификации уже находятся в A.</p>
-            <div class="routeFlow">
-                <div class="routeStep"><strong>B</strong><span>два лучших проходят дальше</span></div>
-                <div class="routeArrow">↓</div>
-                <div class="routeStep routeMain"><strong>A</strong><span>главный финал</span></div>
-            </div>`;
-    }
-
-    html += `<p class="guideNote">В финалах очки квалификации больше не меняются. Здесь учитывается только порядок финиша.</p></div>`;
-    container.innerHTML = html;
+    const el = document.getElementById("finalsExplanation");
+    if (!el) return;
+    const route = [...RaceData.finals].sort((a,b) => a.order-b.order).map(f => f.name).join(" → ");
+    el.innerHTML = `<div class="finalsGuide"><h3>Схема Legion RX</h3><p>${escapeHtml(route)}</p><p class="guideNote">Нижние финалы дают шанс подняться выше. B полностью формирует стартовую сетку A.</p></div>`;
 }
 
 function buildGridHtml(pilots) {
     let html = `<div class="startDirection">НАПРАВЛЕНИЕ ДВИЖЕНИЯ ↑</div><div class="finalGrid">`;
     let index = 0;
-    let groupSize = 2;
-
+    let group = 2;
     while (index < pilots.length) {
-        const rowPilots = pilots.slice(index, index + groupSize);
-        html += `<div class="finalRow ${groupSize === 1 ? "single" : "pair"}">`;
-
-        rowPilots.forEach((pilot, offset) => {
-            html += `
-                <div class="finalSlot">
-                    <div class="finalPlace">${index + offset + 1}</div>
-                    <div class="finalPilot">${escapeHtml(pilot.name)}</div>
-                </div>`;
-        });
-
+        const row = pilots.slice(index, index + group);
+        html += `<div class="finalRow ${group === 1 ? "single" : "pair"}">`;
+        row.forEach((pilot, offset) => html += `<div class="finalSlot"><div class="finalPlace">${index + offset + 1}</div><div class="finalPilot">${escapeHtml(pilot.name)}</div></div>`);
         html += `</div>`;
-        index += rowPilots.length;
-        groupSize = groupSize === 2 ? 1 : 2;
+        index += row.length;
+        group = group === 2 ? 1 : 2;
     }
+    return `${html}</div>`;
+}
 
-    html += `</div>`;
+function finalOptions(count, value = "") {
+    let html = `<option value="">—</option>`;
+    for (let i = 1; i <= count; i += 1) html += `<option value="${i}" ${String(value) === String(i) ? "selected" : ""}>${i}</option>`;
+    ["DNF","DNS","DSQ"].forEach(status => html += `<option value="${status}" ${value === status ? "selected" : ""}>${status}</option>`);
     return html;
 }
 
-function buildSavedResultHtml(final) {
-    if (!final.saved || !final.result.length) return "";
-
-    const rule = getFinalRule(final);
-    let html = `<div class="savedFinalResult"><h3>Результат финала ${final.name}</h3>`;
-
-    final.result.forEach(item => {
-        const pilot = getPilot(item.pilotId);
-        const advances = (final.name === "B" || final.name === "C") && item.place <= 2;
-        html += `
-            <div class="savedResultRow ${advances ? "advances" : ""}">
-                <span class="resultPosition">${item.place}</span>
-                <span class="resultPilot">${escapeHtml(pilot.name)}</span>
-                <span class="resultAction">${advances ? rule.advance : ""}</span>
-            </div>`;
+function bindFinalSelectors() {
+    document.querySelectorAll(".finalPlaceSelect").forEach(select => {
+        select.addEventListener("change", () => refreshUniquePlaces(`.finalPlaceSelect[data-final="${select.dataset.final}"]`));
     });
-
-    html += `</div>`;
-    return html;
+    new Set([...document.querySelectorAll(".finalPlaceSelect")].map(s => s.dataset.final)).forEach(name => refreshUniquePlaces(`.finalPlaceSelect[data-final="${name}"]`));
 }
 
 function drawFinals() {
     const block = document.getElementById("finalsBlock");
     if (!block) return;
-
     block.innerHTML = "";
 
-    [...RaceData.finals]
-        .sort((a, b) => a.order - b.order)
-        .forEach(final => {
-            const pilots = getFinalPilots(final);
-            const rule = getFinalRule(final);
-            const stateText = final.saved ? "Завершён" : final.enabled ? "Готов к проведению" : "Ожидает предыдущий финал";
+    [...RaceData.finals].sort((a,b) => a.order-b.order).forEach(final => {
+        const pilots = getFinalPilots(final);
+        const rule = getFinalRule(final);
+        let html = `<article class="finalCard ${final.enabled ? "activeFinal" : "lockedFinal"}"><div class="finalTitleRow"><div><h2>Финал ${final.name}</h2><div class="finalSubtitle">${rule.title}</div></div><span class="statusBadge">${final.saved ? "Завершён" : final.enabled ? "Готов" : "Ожидает"}</span></div><div class="finalRuleBox"><strong>${rule.advance}</strong><span>${rule.text}</span></div>${buildGridHtml(pilots)}`;
 
-            let html = `
-                <article class="finalCard ${final.enabled ? "activeFinal" : "lockedFinal"}" id="final_${final.name}">
-                    <div class="finalTitleRow">
-                        <div>
-                            <h2>Финал ${final.name}</h2>
-                            <div class="finalSubtitle">${rule.title}</div>
-                        </div>
-                        <span class="statusBadge">${stateText}</span>
-                    </div>
-                    <div class="finalRuleBox">
-                        <strong>${rule.advance}</strong>
-                        <span>${rule.text}</span>
-                    </div>
-                    ${buildGridHtml(pilots)}`;
+        if (!final.saved && pilots.length) {
+            html += `<div class="finishInputTitle">Введите порядок финиша</div><div class="tableWrap"><table><thead><tr><th>Результат</th><th>Пилот</th></tr></thead><tbody>`;
+            pilots.forEach(pilot => html += `<tr><td><select class="finalPlaceSelect" data-final="${final.name}" data-id="${pilot.id}" ${!final.enabled ? "disabled" : ""}>${finalOptions(pilots.length)}</select></td><td>${escapeHtml(pilot.name)}</td></tr>`);
+            html += `</tbody></table></div><button class="finalButton" onclick="saveFinal('${final.name}')" ${!final.enabled ? "disabled" : ""}>Сохранить финал ${final.name}</button>`;
+        } else if (final.saved) {
+            html += `<div class="savedFinalResult"><h3>Результат</h3>`;
+            final.result.forEach((item, idx) => html += `<div class="savedResultRow"><span class="resultPosition">${item.status === "FIN" ? idx + 1 : item.status}</span><span class="resultPilot">${escapeHtml(getPilot(item.pilotId).name)}</span></div>`);
+            html += `</div>`;
+        }
+        block.insertAdjacentHTML("beforeend", `${html}</article>`);
+    });
+    bindFinalSelectors();
+}
 
-            if (!final.saved) {
-                html += `
-                    <div class="finishInputTitle">Введите фактический порядок финиша</div>
-                    <div class="tableWrap">
-                    <table>
-                        <thead><tr><th>Финиш</th><th>Пилот</th></tr></thead>
-                        <tbody>`;
-
-                pilots.forEach(pilot => {
-                    html += `
-                        <tr>
-                            <td>
-                                <select class="finalPlaceSelect"
-                                    data-final="${final.name}"
-                                    data-id="${pilot.id}"
-                                    ${!final.enabled ? "disabled" : ""}>
-                                    <option value="">—</option>
-                                    ${pilots.map((_, index) => `<option value="${index + 1}">${index + 1}</option>`).join("")}
-                                </select>
-                            </td>
-                            <td>${escapeHtml(pilot.name)}</td>
-                        </tr>`;
-                });
-
-                html += `
-                            </tbody>
-                        </table>
-                        </div>
-                        <button class="finalButton"
-                            onclick="saveFinal('${final.name}')"
-                            ${!final.enabled ? "disabled" : ""}>
-                            Сохранить результат финала ${final.name}
-                        </button>`;
-            } else {
-                html += buildSavedResultHtml(final);
-            }
-
-            html += `</article>`;
-            block.insertAdjacentHTML("beforeend", html);
-        });
+function parseFinalResults(finalName) {
+    const selects = [...document.querySelectorAll(`.finalPlaceSelect[data-final="${finalName}"]`)];
+    if (selects.some(s => !s.value)) return null;
+    const numeric = selects.filter(s => /^\d+$/.test(s.value));
+    if (new Set(numeric.map(s => s.value)).size !== numeric.length) return null;
+    return selects.map(s => ({ pilotId: s.dataset.id, status: /^\d+$/.test(s.value) ? "FIN" : s.value, place: /^\d+$/.test(s.value) ? Number(s.value) : null }))
+        .sort((a,b) => (a.place ?? 999) - (b.place ?? 999));
 }
 
 function saveFinal(finalName) {
-    const final = RaceData.finals.find(item => item.name === finalName);
+    const final = finalByName(finalName);
     if (!final || !final.enabled || final.saved) return;
-
-    const selects = [...document.querySelectorAll(`.finalPlaceSelect[data-final="${finalName}"]`)];
-    const places = selects.map(select => Number(select.value));
-    const sorted = [...places].sort((a, b) => a - b);
-
-    if (places.some(place => !Number.isInteger(place) || place < 1)) {
-        alert("Заполните все места финала.");
+    const result = parseFinalResults(finalName);
+    if (!result) {
+        alert("Заполните результаты без повторяющихся мест.");
         return;
     }
-
-    if (sorted.some((place, index) => place !== index + 1)) {
-        alert(`Места должны быть без повторений: от 1 до ${selects.length}.`);
-        return;
-    }
-
-    final.result = selects
-        .map(select => ({ pilotId: select.dataset.id, place: Number(select.value) }))
-        .sort((a, b) => a.place - b.place);
+    final.result = result;
     final.saved = true;
-
-    final.result.forEach(item => {
-        const pilot = getPilot(item.pilotId);
-        pilot.finalResults.push({ final: finalName, place: item.place });
-    });
-
+    result.forEach((item, index) => getPilot(item.pilotId).finalResults.push({ final: finalName, place: item.place, status: item.status, order: index + 1 }));
     advanceFinalists(final);
     drawFinalsExplanation();
     drawFinals();
@@ -283,85 +146,67 @@ function saveFinal(finalName) {
 }
 
 function advanceFinalists(final) {
+    const finishers = final.result.filter(item => item.status === "FIN");
+
     if (final.name === "A1") {
-        const a2 = RaceData.finals.find(item => item.name === "A2");
+        const a2 = finalByName("A2");
         a2.pilots = final.result.map(item => item.pilotId);
         a2.enabled = true;
         return;
     }
 
-    if (final.name === "C") {
-        const bFinal = RaceData.finals.find(item => item.name === "B");
-        bFinal.pilots = [...bFinal.pilots, final.result[0].pilotId, final.result[1].pilotId];
-        bFinal.enabled = true;
-        return;
-    }
-
     if (final.name === "B") {
-        const aFinal = RaceData.finals.find(item => item.name === "A");
-        aFinal.pilots = [...aFinal.pilots, final.result[0].pilotId, final.result[1].pilotId];
-        aFinal.enabled = true;
+        const a = finalByName("A");
+        a.pilots = final.result.map(item => item.pilotId).slice(0, 6);
+        a.enabled = true;
         return;
     }
 
-    if (final.name === "A" || final.name === "A2") {
-        buildFinalProtocol(final);
+    if (final.name !== "A" && final.name !== "A2") {
+        const higher = getHigherFinal(final.name);
+        if (higher) {
+            higher.pilots = [...higher.pilots, ...finishers.slice(0, 2).map(item => item.pilotId)];
+            higher.enabled = true;
+        }
+        return;
     }
+
+    buildFinalProtocol(final);
 }
 
 function buildFinalProtocol(mainFinal) {
     const protocol = [];
     const added = new Set();
 
-    mainFinal.result.forEach(item => {
-        protocol.push(getPilot(item.pilotId));
-        added.add(String(item.pilotId));
-    });
-
-    [...RaceData.finals]
-        .filter(final => final.saved && final.name !== mainFinal.name)
-        .sort((a, b) => b.order - a.order)
-        .forEach(final => {
-            final.result.forEach(item => {
-                const id = String(item.pilotId);
-                if (!added.has(id)) {
-                    protocol.push(getPilot(item.pilotId));
-                    added.add(id);
-                }
-            });
+    function addResult(final) {
+        final.result.forEach(item => {
+            if (!added.has(String(item.pilotId))) {
+                protocol.push(getPilot(item.pilotId));
+                added.add(String(item.pilotId));
+            }
         });
+    }
 
-    RaceData.pilots.forEach(pilot => {
-        if (!added.has(String(pilot.id))) protocol.push(pilot);
-    });
+    addResult(mainFinal);
+    [...RaceData.finals].filter(f => f.saved && f.name !== mainFinal.name).sort((a,b) => b.order-a.order).forEach(addResult);
+    RaceData.pilots.forEach(p => { if (!added.has(String(p.id))) protocol.push(p); });
 
-    RaceData.finalProtocol = protocol.map((pilot, index) => ({
-        place: index + 1,
-        pilotId: pilot.id
-    }));
+    RaceData.finalProtocol = protocol.map((pilot, index) => ({ place: index + 1, pilotId: pilot.id, eventPoints: EVENT_POINTS[index] || 0 }));
     RaceData.stage = "finished";
     drawFinalProtocol();
+    saveToBrowser();
 }
 
 function drawFinalProtocol() {
     const section = document.getElementById("protocolSection");
     const block = document.getElementById("protocolBlock");
     if (!section || !block || !RaceData.finalProtocol.length) return;
-
     section.classList.remove("hidden");
 
-    let html = `<div class="podium">`;
-    RaceData.finalProtocol.slice(0, 3).forEach(item => {
-        const pilot = getPilot(item.pilotId);
-        html += `<div class="podiumPlace place${item.place}"><span>${item.place}</span>${escapeHtml(pilot.name)}</div>`;
-    });
-    html += `</div><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th></tr></thead><tbody>`;
-
-    RaceData.finalProtocol.forEach(item => {
-        html += `<tr><td>${item.place}</td><td>${escapeHtml(getPilot(item.pilotId).name)}</td></tr>`;
-    });
-
-    html += `</tbody></table></div>`;
-    block.innerHTML = html;
+    let html = `<div class="protocolMeta"><strong>${escapeHtml(RaceData.eventName)}</strong><span>${escapeHtml(RaceData.clubName || "")}</span><span>${escapeHtml(RaceData.eventDate || "")} ${escapeHtml(RaceData.eventLocation || "")}</span></div><div class="podium">`;
+    RaceData.finalProtocol.slice(0,3).forEach(item => html += `<div class="podiumPlace place${item.place}"><span>${item.place}</span>${escapeHtml(getPilot(item.pilotId).name)}</div>`);
+    html += `</div><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th><th>Очки этапа</th></tr></thead><tbody>`;
+    RaceData.finalProtocol.forEach(item => html += `<tr><td>${item.place}</td><td>${escapeHtml(getPilot(item.pilotId).name)}</td><td>${item.eventPoints}</td></tr>`);
+    block.innerHTML = `${html}</tbody></table></div>`;
     section.scrollIntoView({ behavior: "smooth", block: "start" });
 }
