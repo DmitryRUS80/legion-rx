@@ -1,5 +1,5 @@
 {
-  "name": "Legion RallyCross Manager",
+  "name": "Legion RX",
   "short_name": "Legion RX",
   "description": "Менеджер квалификаций и финалов RC RallyCross",
   "lang": "ru",
@@ -7,8 +7,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#151515",
-  "theme_color": "#151515",
+  "background_color": "#090b0f",
+  "theme_color": "#090b0f",
   "icons": [
     {
       "src": "icons/icon-192.png",

@@ -1,4 +1,4 @@
-/* Legion RallyCross Manager v1.3 */
+/* Legion RallyCross Manager v2.0 UI */
 
 const $ = id => document.getElementById(id);
 const eventNameInput = $("eventName");
@@ -34,6 +34,7 @@ createRaceButton.addEventListener("click", () => {
     readRaceForm();
     createRaceButton.textContent = "✔ Соревнование создано";
     saveToBrowser();
+    updateHomeSummary();
 });
 
 addPilotButton.addEventListener("click", () => {
@@ -44,6 +45,7 @@ addPilotButton.addEventListener("click", () => {
     pilotInput.value = "";
     drawPilots();
     saveToBrowser();
+    updateHomeSummary();
 });
 
 pilotInput.addEventListener("keydown", e => { if (e.key === "Enter") addPilotButton.click(); });
@@ -56,7 +58,7 @@ function drawPilots() {
         pilotTable.appendChild(row);
     });
     pilotTable.querySelectorAll(".removeButton").forEach(button => button.addEventListener("click", () => { removePilot(button.dataset.id); drawPilots(); saveToBrowser(); }));
-    pilotCounter.textContent = `Пилотов: ${RaceData.pilots.length}`;
+    pilotCounter.textContent = String(RaceData.pilots.length);
     nextButton.disabled = RaceData.pilots.length < 3;
 }
 
@@ -64,6 +66,7 @@ nextButton.addEventListener("click", () => {
     if (RaceData.pilots.length < 3) return alert("Минимум 3 пилота.");
     readRaceForm();
     generateQualifying();
+    navigateTo("race", "qualifyingBlock");
 });
 
 function saveToBrowser() {
@@ -189,10 +192,47 @@ function exportProtocolPng() {
     link.click();
 }
 
-function showView(view) {
-    $("raceView").classList.toggle("hidden", view !== "race");
-    $("archiveView").classList.toggle("hidden", view !== "archive");
+function updateHomeSummary() {
+    const card = $("currentRaceCard");
+    if (!card) return;
+    if (!RaceData.id || !RaceData.pilots.length) {
+        card.classList.add("hidden");
+        return;
+    }
+    const stageNames = { setup: "Подготовка", qualifying: "Квалификация", finals: "Финалы", finished: "Завершено" };
+    card.innerHTML = `
+        <div class="cardLabel">ТЕКУЩЕЕ СОРЕВНОВАНИЕ</div>
+        <h3>${escapeHtml(RaceData.eventName || "Legion RX")}</h3>
+        <p>${RaceData.pilots.length} пилотов · ${stageNames[RaceData.stage] || "Подготовка"} · ${escapeHtml(RaceData.eventDate || "без даты")}</p>
+        <button class="secondaryButton" data-route="race">Продолжить гонку</button>
+    `;
+    card.classList.remove("hidden");
+    bindRouteButtons(card);
+}
+
+function bindRouteButtons(root = document) {
+    root.querySelectorAll("[data-route]").forEach(button => {
+        if (button.dataset.routeBound === "1") return;
+        button.dataset.routeBound = "1";
+        button.addEventListener("click", () => navigateTo(button.dataset.route, button.dataset.scroll));
+    });
+}
+
+function navigateTo(view, scrollId = "") {
+    const views = { home: $("homeView"), race: $("raceView"), archive: $("archiveView"), settings: $("settingsView") };
+    Object.entries(views).forEach(([name, element]) => element?.classList.toggle("hidden", name !== view));
+    document.querySelectorAll(".navItem").forEach(item => item.classList.toggle("active", item.dataset.route === view && (!scrollId || item.dataset.scroll === scrollId)));
     if (view === "archive") drawArchive();
+    if (view === "home") updateHomeSummary();
+    requestAnimationFrame(() => {
+        const target = scrollId ? document.getElementById(scrollId) : null;
+        if (target && !target.classList.contains("hidden")) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        else window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+}
+
+function showView(view) {
+    navigateTo(view);
 }
 
 function restoreRaceView() {
@@ -208,12 +248,18 @@ function restoreRaceView() {
 
 $("exportRace").addEventListener("click", exportRace);
 $("clearRace").addEventListener("click", clearRace);
-$("showRace").addEventListener("click", () => showView("race"));
-$("showArchive").addEventListener("click", () => showView("archive"));
 $("archiveFilter").addEventListener("change", drawArchive);
 $("printProtocol").addEventListener("click", printProtocol);
 $("saveProtocolImage").addEventListener("click", exportProtocolPng);
 $("archiveRace").addEventListener("click", archiveCurrentRace);
+$("openHome").addEventListener("click", () => navigateTo("home"));
+$("showInstallInfo").addEventListener("click", () => {
+    const box = $("installHelp");
+    box.innerHTML = "На iPhone откройте сайт в Safari → Поделиться → На экран «Домой». После первого запуска приложение работает офлайн.";
+    box.classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+});
+bindRouteButtons();
 
 if (loadFromBrowser()) {
     eventNameInput.value = RaceData.eventName || "";
@@ -229,3 +275,5 @@ if (loadFromBrowser()) {
 
 drawPilots();
 restoreRaceView();
+updateHomeSummary();
+navigateTo("home");

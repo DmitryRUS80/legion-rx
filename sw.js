@@ -1,4 +1,4 @@
-const CACHE_NAME = "legion-rx-v1-3";
+const CACHE_NAME = "legion-rx-v2-1-ui";
 const APP_FILES = [
   "./",
   "./index.html",
@@ -12,7 +12,8 @@ const APP_FILES = [
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
-  "./icons/apple-touch-icon.png"
+  "./icons/apple-touch-icon.png",
+  "./assets/legion-rx-hero.jpg"
 ];
 
 self.addEventListener("install", event => {

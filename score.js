@@ -60,16 +60,18 @@ function drawStandings() {
     if (!container) return;
     updateStandings();
 
-    let html = `<div class="tableWrap"><table><thead><tr><th>№</th><th>Пилот</th>`;
+    let html = `<div class="tableWrap"><table class="rankingTable"><thead><tr><th>№</th><th>Пилот</th>`;
     for (let round = 1; round <= RaceData.qualifyingCount; round += 1) html += `<th>Q${round}</th>`;
     html += `<th>Best 3</th></tr></thead><tbody>`;
 
     RaceData.pilots.forEach((pilot, index) => {
-        html += `<tr><td>${index + 1}</td><td>${escapeHtml(pilot.name)}</td>`;
+        html += `<tr><td>${index + 1}</td><td><strong>${escapeHtml(pilot.name)}</strong></td>`;
         for (let round = 1; round <= RaceData.qualifyingCount; round += 1) {
-            html += `<td>${formatQualifyingResult(pilot.qualifying.find(item => item.round === round))}</td>`;
+            const result = pilot.qualifying.find(item => item.round === round);
+            const winnerClass = result?.status === "FIN" && result.place === 1 ? "roundWinner" : "";
+            html += `<td class="${winnerClass}">${formatQualifyingResult(result)}</td>`;
         }
-        html += `<td><strong>${pilot.best3}</strong></td></tr>`;
+        html += `<td class="bestTotal"><strong>${pilot.best3}</strong></td></tr>`;
     });
 
     container.innerHTML = `${html}</tbody></table></div>`;
