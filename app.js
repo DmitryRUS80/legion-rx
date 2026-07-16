@@ -117,15 +117,46 @@ function getArchive() {
 }
 
 function archiveCurrentRace() {
-    if (RaceData.stage !== "finished") return alert("Сначала завершите соревнование.");
+    if (!RaceData.id || !RaceData.pilots.length) {
+        return alert("Нет текущего соревнования для сохранения.");
+    }
+
     const archive = getArchive();
     const snapshot = JSON.parse(JSON.stringify(RaceData));
+    snapshot.archivedAt = new Date().toISOString();
+
     const idx = archive.findIndex(item => item.id === snapshot.id);
     if (idx >= 0) archive[idx] = snapshot;
     else archive.unshift(snapshot);
+
     localStorage.setItem("legionRxArchive", JSON.stringify(archive));
-    alert("Соревнование сохранено в архив.");
+    alert(RaceData.stage === "finished"
+        ? "Завершённое соревнование сохранено в архив."
+        : "Текущая гонка сохранена в архив как незавершённая.");
     drawArchive();
+}
+
+function discardCurrentRace() {
+    if (!RaceData.id || !RaceData.pilots.length) {
+        return alert("Текущей гонки нет.");
+    }
+
+    if (!confirm("Отменить текущую гонку? Все несохранённые результаты будут удалены.")) return;
+
+    localStorage.removeItem("legionRxRace");
+    location.reload();
+}
+
+function startNewRace() {
+    if (RaceData.id && RaceData.pilots.length) {
+        const confirmed = confirm("Начать новую гонку? Текущая гонка будет удалена. При необходимости сначала сохраните её в архив.");
+        if (!confirmed) return;
+        localStorage.removeItem("legionRxRace");
+        location.reload();
+        return;
+    }
+
+    navigateTo("race", "createSection");
 }
 
 function drawArchive() {
@@ -195,19 +226,34 @@ function exportProtocolPng() {
 function updateHomeSummary() {
     const card = $("currentRaceCard");
     if (!card) return;
+
     if (!RaceData.id || !RaceData.pilots.length) {
         card.classList.add("hidden");
         return;
     }
-    const stageNames = { setup: "Подготовка", qualifying: "Квалификация", finals: "Финалы", finished: "Завершено" };
+
+    const stageNames = {
+        setup: "Подготовка",
+        qualifying: "Квалификация",
+        finals: "Финалы",
+        finished: "Завершено"
+    };
+
     card.innerHTML = `
         <div class="cardLabel">ТЕКУЩЕЕ СОРЕВНОВАНИЕ</div>
         <h3>${escapeHtml(RaceData.eventName || "Legion RX")}</h3>
         <p>${RaceData.pilots.length} пилотов · ${stageNames[RaceData.stage] || "Подготовка"} · ${escapeHtml(RaceData.eventDate || "без даты")}</p>
-        <button class="secondaryButton" data-route="race">Продолжить гонку</button>
+        <div class="currentRaceActions">
+            <button class="primaryAction" data-route="race">Продолжить гонку</button>
+            <button class="secondaryButton" id="quickArchiveRace">Сохранить в архив</button>
+            <button class="dangerButton" id="cancelCurrentRace">Отменить гонку</button>
+        </div>
     `;
+
     card.classList.remove("hidden");
     bindRouteButtons(card);
+    $("quickArchiveRace")?.addEventListener("click", archiveCurrentRace);
+    $("cancelCurrentRace")?.addEventListener("click", discardCurrentRace);
 }
 
 function bindRouteButtons(root = document) {
@@ -247,7 +293,8 @@ function restoreRaceView() {
 }
 
 $("exportRace").addEventListener("click", exportRace);
-$("clearRace").addEventListener("click", clearRace);
+$("clearRace").addEventListener("click", discardCurrentRace);
+$("homeNewRace").addEventListener("click", startNewRace);
 $("archiveFilter").addEventListener("change", drawArchive);
 $("printProtocol").addEventListener("click", printProtocol);
 $("saveProtocolImage").addEventListener("click", exportProtocolPng);

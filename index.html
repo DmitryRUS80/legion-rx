@@ -15,12 +15,12 @@
 <body>
 <div class="appShell">
     <header class="topBar">
-        <button class="iconButton" id="openHome" aria-label="Главная">☰</button>
+        <button class="homeButton" id="openHome" aria-label="На главную"><span>⌂</span><small>Главная</small></button>
         <div class="brandBlock">
             <div class="brandMark"><span>LEGION</span><b>RX</b></div>
             <small>RallyCross Manager</small>
         </div>
-        <div class="liveBadge"><span></span> v2.1</div>
+        <div class="versionBadge">v2.2</div>
     </header>
 
     <div id="installHelp" class="installHelp hidden"></div>
@@ -30,7 +30,8 @@
             <div class="heroShowcase">
                 <img src="assets/legion-rx-hero.jpg" alt="Legion RX — менеджер соревнований RallyCross">
                 <div class="heroShowcaseActions">
-                    <button class="primaryAction" data-route="race" data-scroll="createSection">Создать соревнование</button>
+                    <button class="primaryAction" id="homeNewRace">Новая гонка</button>
+                    <button class="secondaryButton" data-route="archive">Архив соревнований</button>
                 </div>
             </div>
 
@@ -184,7 +185,7 @@
             <div class="screenHero compactHero"><div><span>СИСТЕМА</span><h1>Настройки</h1></div><button class="ghostAction" data-route="home">← Меню</button></div>
             <div class="settingsGrid">
                 <article class="settingsCard"><span>↧</span><div><h3>Экспорт гонки</h3><p>Сохранить полную резервную копию в JSON.</p></div><button id="exportRace">Скачать</button></article>
-                <article class="settingsCard dangerSettings"><span>×</span><div><h3>Новая гонка</h3><p>Удалить текущие данные и начать заново.</p></div><button id="clearRace">Очистить</button></article>
+                <article class="settingsCard dangerSettings"><span>×</span><div><h3>Отменить текущую гонку</h3><p>Удалить незавершённую гонку. Архив не пострадает.</p></div><button id="clearRace">Отменить</button></article>
                 <article class="settingsCard"><span>▣</span><div><h3>PWA-приложение</h3><p>Устанавливается на экран iPhone и работает офлайн.</p></div><button id="showInstallInfo">Инструкция</button></article>
             </div>
         </section>

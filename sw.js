@@ -1,4 +1,4 @@
-const CACHE_NAME = "legion-rx-v2-1-ui";
+const CACHE_NAME = "legion-rx-v2-2-ui";
 const APP_FILES = [
   "./",
   "./index.html",

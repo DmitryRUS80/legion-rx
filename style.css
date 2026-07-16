@@ -157,3 +157,58 @@ button{
     .standingsPanel{padding:10px}
     .rankingTable th,.rankingTable td{padding:9px 7px}
 }
+
+/* =========================================
+   Legion RX v2.2 — понятные действия
+========================================= */
+.homeButton{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:1px;
+    width:46px;
+    height:46px;
+    margin:0;
+    padding:5px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#11151b;
+    color:#fff;
+}
+.homeButton span{font-size:19px;line-height:1}
+.homeButton small{font-size:8px;color:#a9afb8}
+.versionBadge{
+    min-width:46px;
+    padding:8px 9px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#11151b;
+    color:#b7bdc6;
+    font-size:11px;
+    font-weight:800;
+    text-align:center;
+}
+.heroShowcaseActions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+}
+.heroShowcaseActions button{width:100%;margin:0}
+.currentRaceActions{
+    display:grid;
+    grid-template-columns:1.25fr 1fr 1fr;
+    gap:8px;
+    margin-top:14px;
+}
+.currentRaceActions button{width:100%;margin:0}
+.dangerButton{
+    border:1px solid rgba(255,75,75,.45);
+    background:rgba(255,75,75,.08);
+    color:#ff7474;
+}
+.dangerButton:hover{background:rgba(255,75,75,.16)}
+@media(max-width:700px){
+    .heroShowcaseActions{grid-template-columns:1fr}
+    .currentRaceActions{grid-template-columns:1fr}
+}
