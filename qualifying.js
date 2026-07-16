@@ -1,4 +1,4 @@
-/* Legion RallyCross Manager v1.3 */
+/* Legion RallyCross Manager v2.3 */
 
 function getHeatCount(pilotCount) {
     if (pilotCount <= 6) return 1;
@@ -17,12 +17,12 @@ function buildSnakeHeats(pilots, heatCount, round) {
         heats[heatIndex].push(pilot);
     });
 
-    return heats.filter(Boolean).filter(heat => heat.length);
+    return heats.filter(heat => heat.length);
 }
 
 function createQualifyingData() {
     RaceData.heats = [];
-    const pilots = [...RaceData.pilots];
+    const pilots = [...RaceData.pilots].sort((a,b) => (a.registrationOrder || 0) - (b.registrationOrder || 0));
     const heatCount = getHeatCount(pilots.length);
 
     for (let round = 1; round <= RaceData.qualifyingCount; round += 1) {
@@ -40,6 +40,7 @@ function createQualifyingData() {
 function generateQualifying() {
     RaceData.finals = [];
     RaceData.finalProtocol = [];
+    RaceData.exactTieLots = {};
     RaceData.stage = "qualifying";
     RaceData.pilots.forEach(pilot => {
         pilot.qualifying = [];
@@ -64,6 +65,14 @@ function resultOptions(count, selectedValue = "") {
     return html;
 }
 
+function dnfOrderOptions(count, selectedValue = "") {
+    let html = `<option value="">Порядок схода</option>`;
+    for (let order = 1; order <= count; order += 1) {
+        html += `<option value="${order}" ${String(selectedValue) === String(order) ? "selected" : ""}>DNF-${order}</option>`;
+    }
+    return html;
+}
+
 function refreshUniquePlaces(selector) {
     const selects = [...document.querySelectorAll(selector)];
     const chosen = new Map();
@@ -80,17 +89,46 @@ function refreshUniquePlaces(selector) {
     });
 }
 
+function refreshUniqueDnfOrders(round, heat) {
+    const selectors = [...document.querySelectorAll(`.dnfOrder[data-q="${round}"][data-heat="${heat}"]`)].filter(select => !select.classList.contains("hidden"));
+    const chosen = new Map();
+    selectors.forEach(select => { if (select.value) chosen.set(select.value, select); });
+    selectors.forEach(select => {
+        [...select.options].forEach(option => {
+            if (!option.value) return;
+            option.disabled = chosen.has(option.value) && chosen.get(option.value) !== select;
+        });
+    });
+}
+
+function toggleDnfOrder(select) {
+    const orderSelect = document.querySelector(`.dnfOrder[data-id="${select.dataset.id}"][data-q="${select.dataset.q}"][data-heat="${select.dataset.heat}"]`);
+    if (!orderSelect) return;
+    const isDnf = select.value === "DNF";
+    orderSelect.classList.toggle("hidden", !isDnf);
+    orderSelect.disabled = select.disabled || !isDnf;
+    if (!isDnf) orderSelect.value = "";
+    refreshUniqueDnfOrders(select.dataset.q, select.dataset.heat);
+}
+
 function bindUniquePlaceSelectors() {
     document.querySelectorAll(".finishPlace").forEach(select => {
         select.addEventListener("change", () => {
             refreshUniquePlaces(`.finishPlace[data-q="${select.dataset.q}"][data-heat="${select.dataset.heat}"]`);
+            toggleDnfOrder(select);
         });
+        toggleDnfOrder(select);
+    });
+
+    document.querySelectorAll(".dnfOrder").forEach(select => {
+        select.addEventListener("change", () => refreshUniqueDnfOrders(select.dataset.q, select.dataset.heat));
     });
 
     const groups = new Set([...document.querySelectorAll(".finishPlace")].map(select => `${select.dataset.q}:${select.dataset.heat}`));
     groups.forEach(group => {
         const [round, heat] = group.split(":");
         refreshUniquePlaces(`.finishPlace[data-q="${round}"][data-heat="${heat}"]`);
+        refreshUniqueDnfOrders(round, heat);
     });
 }
 
@@ -113,10 +151,11 @@ function renderQualifying() {
             pilots.forEach(pilot => {
                 const saved = pilot.qualifying.find(result => result.round === round);
                 const value = saved ? (saved.status === "FIN" ? saved.place : saved.status) : "";
-                html += `<tr><td><select class="finishPlace" data-id="${pilot.id}" data-q="${round}" data-heat="${heatData.heat}" ${heatData.saved ? "disabled" : ""}>${resultOptions(pilots.length, value)}</select></td><td>${escapeHtml(pilot.name)}</td></tr>`;
+                const dnfOrder = saved?.dnfOrder || "";
+                html += `<tr><td><div class="resultControl"><select class="finishPlace" data-id="${pilot.id}" data-q="${round}" data-heat="${heatData.heat}" ${heatData.saved ? "disabled" : ""}>${resultOptions(pilots.length, value)}</select><select class="dnfOrder ${value === "DNF" ? "" : "hidden"}" data-id="${pilot.id}" data-q="${round}" data-heat="${heatData.heat}" ${heatData.saved || value !== "DNF" ? "disabled" : ""}>${dnfOrderOptions(pilots.length, dnfOrder)}</select></div></td><td>${escapeHtml(pilot.name)}</td></tr>`;
             });
 
-            html += `</tbody></table></div><button id="save_q${round}_h${heatData.heat}" onclick="saveHeat(${round},${heatData.heat})" ${heatData.saved ? "disabled" : ""}>${heatData.saved ? "✔ Заезд сохранён" : "Сохранить заезд"}</button></div>`;
+            html += `</tbody></table></div><div class="heatActions"><button id="save_q${round}_h${heatData.heat}" onclick="saveHeat(${round},${heatData.heat})" ${heatData.saved ? "disabled" : ""}>${heatData.saved ? "✔ Заезд сохранён" : "Сохранить заезд"}</button>${heatData.saved ? `<button class="secondaryButton editResultButton" onclick="editHeat(${round},${heatData.heat})">Исправить результат</button>` : ""}</div></div>`;
         });
 
         content.insertAdjacentHTML("beforeend", `${html}</section>`);
@@ -126,39 +165,76 @@ function renderQualifying() {
     drawStandings();
 }
 
+function validateHeatResults(round, heatNumber) {
+    const selects = [...document.querySelectorAll(`.finishPlace[data-q="${round}"][data-heat="${heatNumber}"]`)];
+    if (selects.some(select => !select.value)) return "Укажите результат каждого пилота.";
+
+    const places = selects.map(select => select.value).filter(value => /^\d+$/.test(value));
+    if (new Set(places).size !== places.length) return "Финишные места не должны повторяться.";
+
+    const dnfSelects = selects.filter(select => select.value === "DNF");
+    const dnfOrders = dnfSelects.map(select => document.querySelector(`.dnfOrder[data-id="${select.dataset.id}"][data-q="${round}"][data-heat="${heatNumber}"]`)?.value || "");
+    if (dnfOrders.some(value => !value)) return "Для каждого DNF укажите порядок схода.";
+    if (new Set(dnfOrders).size !== dnfOrders.length) return "Порядок DNF не должен повторяться.";
+
+    return "";
+}
+
 function saveHeat(round, heatNumber) {
     const heatData = RaceData.heats.find(heat => heat.qualifying === round && heat.heat === heatNumber);
     if (!heatData || heatData.saved) return;
 
+    const error = validateHeatResults(round, heatNumber);
+    if (error) return alert(error);
+
     const selects = [...document.querySelectorAll(`.finishPlace[data-q="${round}"][data-heat="${heatNumber}"]`)];
-    if (selects.some(select => !select.value)) {
-        alert("Укажите результат каждого пилота.");
-        return;
-    }
-
-    const places = selects.map(select => select.value).filter(value => /^\d+$/.test(value));
-    if (new Set(places).size !== places.length) {
-        alert("Финишные места не должны повторяться.");
-        return;
-    }
-
     selects.forEach(select => {
         const raw = select.value;
-        savePilotResult(getPilot(select.dataset.id), round, heatNumber, /^\d+$/.test(raw) ? Number(raw) : raw);
+        const dnfOrder = raw === "DNF" ? Number(document.querySelector(`.dnfOrder[data-id="${select.dataset.id}"][data-q="${round}"][data-heat="${heatNumber}"]`)?.value) : null;
+        savePilotResult(getPilot(select.dataset.id), round, heatNumber, /^\d+$/.test(raw) ? Number(raw) : raw, dnfOrder);
         select.disabled = true;
     });
 
     heatData.saved = true;
-    document.getElementById(`save_q${round}_h${heatNumber}`).disabled = true;
-    document.getElementById(`save_q${round}_h${heatNumber}`).textContent = "✔ Заезд сохранён";
     updateStandings();
     drawStandings();
     saveToBrowser();
+    renderQualifying();
 
     if (RaceData.heats.every(heat => heat.saved)) {
         RaceData.stage = "finals";
         document.getElementById("finalsSection").classList.remove("hidden");
+        if (hasUnresolvedExactTies()) {
+            alert("Квалификация завершена. Перед формированием финалов проведите жеребьёвку для абсолютного равенства.");
+            document.getElementById("standings").scrollIntoView({ behavior: "smooth", block: "center" });
+            saveToBrowser();
+            return;
+        }
         generateFinals();
         document.getElementById("finalsSection").scrollIntoView({ behavior: "smooth", block: "start" });
     }
+}
+
+function editHeat(round, heatNumber) {
+    const heatData = RaceData.heats.find(heat => heat.qualifying === round && heat.heat === heatNumber);
+    if (!heatData?.saved) return;
+
+    const downstreamExists = RaceData.finals.length || RaceData.finalProtocol.length;
+    const message = downstreamExists
+        ? "Изменение квалификации удалит сформированные финалы и итоговый протокол. Продолжить?"
+        : "Разблокировать заезд для исправления результата?";
+    if (!confirm(message)) return;
+
+    heatData.saved = false;
+    heatData.pilots.forEach(id => {
+        const pilot = getPilot(id);
+        pilot.qualifying = pilot.qualifying.filter(result => result.round !== round);
+    });
+    RaceData.finals = [];
+    RaceData.finalProtocol = [];
+    RaceData.exactTieLots = {};
+    RaceData.stage = "qualifying";
+    updateStandings();
+    saveToBrowser();
+    renderQualifying();
 }

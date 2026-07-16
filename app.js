@@ -1,4 +1,4 @@
-/* Legion RallyCross Manager v2.0 UI */
+/* Legion RallyCross Manager v2.3 UI */
 
 const $ = id => document.getElementById(id);
 const eventNameInput = $("eventName");
@@ -80,7 +80,21 @@ function loadFromBrowser() {
     try {
         const parsed = JSON.parse(saved);
         Object.assign(RaceData, parsed);
-        RaceData.pilots = (parsed.pilots || []).map(data => Object.assign(new Pilot(data.name), data));
+        RaceData.exactTieLots = parsed.exactTieLots || {};
+        RaceData.pilots = (parsed.pilots || []).map((data, index) => {
+            const pilot = Object.assign(new Pilot(data.name), data);
+            if (!pilot.registrationOrder) pilot.registrationOrder = index + 1;
+            if (!Array.isArray(pilot.qualifying)) pilot.qualifying = [];
+            if (!Array.isArray(pilot.finalResults)) pilot.finalResults = [];
+            return pilot;
+        });
+        RaceData.finals = (parsed.finals || []).map(final => ({
+            basePilots: final.basePilots || final.pilots || [],
+            result: final.result || [],
+            saved: Boolean(final.saved),
+            enabled: Boolean(final.enabled),
+            ...final
+        }));
         return true;
     } catch (error) {
         console.error(error);
@@ -307,6 +321,22 @@ $("showInstallInfo").addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
 });
 bindRouteButtons();
+
+$("showRules").addEventListener("click", () => {
+    const panel = $("rulesPanel");
+    panel.innerHTML = `
+        <div class="rulesHeader"><div><span>LEGION RX</span><h2>Спортивный регламент v2.3</h2></div><button class="secondaryButton" onclick="document.getElementById('rulesPanel').classList.add('hidden')">Закрыть</button></div>
+        <div class="rulesGrid">
+            <article><b>Квалификация</b><p>3–5 серий. Всегда учитываются три лучших результата. Очки начисляются за место в своём заезде.</p></article>
+            <article><b>Тай-брейк</b><p>Best 3 → победы в зачётной тройке → вторые/третьи места → лучший отброшенный результат → последние квалификации → жеребьёвка.</p></article>
+            <article><b>Статусы</b><p>DNF получает 0 очков и ручной порядок схода. DNS и DSQ получают 0. DSQ не продвигается в следующий финал.</p></article>
+            <article><b>3–6 пилотов</b><p>A1 формирует старт A2. A2 определяет итог соревнования.</p></article>
+            <article><b>7–16 пилотов</b><p>Из нижних финалов проходят два лучших классифицированных. B полностью формирует решётку A.</p></article>
+            <article><b>Очки этапа</b><p>25–20–16–13–11–10–8–6–4–3–2–1. С 13 места — 0.</p></article>
+        </div>`;
+    panel.classList.remove("hidden");
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
+});
 
 if (loadFromBrowser()) {
     eventNameInput.value = RaceData.eventName || "";

@@ -1,4 +1,4 @@
-/* Legion RallyCross Manager v1.3 */
+/* Legion RallyCross Manager v2.3 */
 
 const RaceData = {
     id: "",
@@ -13,17 +13,19 @@ const RaceData = {
     heats: [],
     finals: [],
     finalProtocol: [],
+    exactTieLots: {},
     stage: "setup",
     createdAt: "",
     updatedAt: ""
 };
 
-const EVENT_POINTS = [25, 20, 16, 13, 11, 10];
+const EVENT_POINTS = [25, 20, 16, 13, 11, 10, 8, 6, 4, 3, 2, 1];
 
 class Pilot {
     constructor(name) {
         this.id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
         this.name = name;
+        this.registrationOrder = RaceData.pilots.length + 1;
         this.qualifying = [];
         this.best3 = 0;
         this.points = 0;
@@ -47,6 +49,7 @@ function resetRaceResults() {
     RaceData.heats = [];
     RaceData.finals = [];
     RaceData.finalProtocol = [];
+    RaceData.exactTieLots = {};
     RaceData.stage = "setup";
 
     RaceData.pilots.forEach(pilot => {

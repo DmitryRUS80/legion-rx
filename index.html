@@ -20,7 +20,7 @@
             <div class="brandMark"><span>LEGION</span><b>RX</b></div>
             <small>RallyCross Manager</small>
         </div>
-        <div class="versionBadge">v2.2</div>
+        <div class="versionBadge">v2.3</div>
     </header>
 
     <div id="installHelp" class="installHelp hidden"></div>
@@ -136,7 +136,7 @@
 
             <section id="qualifyingBlock" class="card hidden">
                 <div class="cardLabel">03 · BEST 3</div>
-                <div class="sectionTitleRow"><div><h2>Квалификации</h2><p class="sectionHint">Лучшие три результата подсвечиваются красным.</p></div><span class="rxTag">FIA POINTS</span></div>
+                <div class="sectionTitleRow"><div><h2>Квалификации</h2><p class="sectionHint">Победы выделены красным. В зачёт автоматически входят три лучших результата.</p></div><span class="rxTag">FIA POINTS</span></div>
                 <div id="qualifyingContent"></div>
                 <div class="standingsPanel">
                     <div class="standingsHeader"><div><span>LIVE RANKING</span><h2>Общий рейтинг</h2></div><b>BEST 3</b></div>
@@ -187,7 +187,9 @@
                 <article class="settingsCard"><span>↧</span><div><h3>Экспорт гонки</h3><p>Сохранить полную резервную копию в JSON.</p></div><button id="exportRace">Скачать</button></article>
                 <article class="settingsCard dangerSettings"><span>×</span><div><h3>Отменить текущую гонку</h3><p>Удалить незавершённую гонку. Архив не пострадает.</p></div><button id="clearRace">Отменить</button></article>
                 <article class="settingsCard"><span>▣</span><div><h3>PWA-приложение</h3><p>Устанавливается на экран iPhone и работает офлайн.</p></div><button id="showInstallInfo">Инструкция</button></article>
+                <article class="settingsCard"><span>§</span><div><h3>Регламент v2.3</h3><p>Best 3, тай-брейки, DNF/DNS/DSQ и финальная лестница.</p></div><button id="showRules">Открыть</button></article>
             </div>
+            <div id="rulesPanel" class="rulesPanel hidden"></div>
         </section>
     </main>
 

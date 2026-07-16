@@ -212,3 +212,24 @@ button{
     .heroShowcaseActions{grid-template-columns:1fr}
     .currentRaceActions{grid-template-columns:1fr}
 }
+
+/* =========================================
+   Legion RX v2.3 — спортивный регламент
+========================================= */
+.resultControl{display:grid;grid-template-columns:minmax(110px,1fr) minmax(120px,1fr);gap:7px;align-items:center}
+.resultControl select{margin:0;padding:10px 11px;font-size:13px}
+.heatActions{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:12px}
+.heatActions button{margin:0}
+.editResultButton{color:#d7dbe1}
+.rankingTable .best3Cell:not(.roundWinner){background:rgba(255,255,255,.025)}
+.rankingTable .discardedCell{opacity:.58}
+.tieMark{display:block;margin-top:4px;color:#ffb65c;font-size:9px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+.regulationAlert{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:13px;padding:14px;border:1px solid #3a3030;border-radius:10px;background:#171316}
+.regulationAlert div{display:grid;gap:4px}.regulationAlert strong{color:#ffb65c}.regulationAlert span{color:#a7adb7;font-size:12px;line-height:1.4}
+.regulationAlert button{width:auto;margin:0;padding:10px 13px}
+.emptyGrid{margin:18px 0;padding:20px;border:1px dashed #343b46;border-radius:10px;color:#777f8a;text-align:center}
+.rulesPanel{margin-top:16px;padding:18px;border:1px solid rgba(239,43,45,.38);border-radius:13px;background:#0b0e13}
+.rulesHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.rulesHeader span{color:var(--red);font-size:10px;font-weight:900;letter-spacing:1.5px}.rulesHeader h2{margin-top:4px}
+.rulesGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.rulesGrid article{padding:14px;border:1px solid #272d36;border-radius:9px;background:#11151b}.rulesGrid b{color:#fff}.rulesGrid p{margin-top:6px;color:#9299a4;font-size:12px;line-height:1.5}
+.savedFinalResult .editResultButton{width:100%;margin-top:12px}
+@media(max-width:700px){.resultControl{grid-template-columns:1fr}.heatActions{grid-template-columns:1fr}.regulationAlert,.rulesHeader{align-items:stretch;flex-direction:column}.regulationAlert button,.rulesHeader button{width:100%}.rulesGrid{grid-template-columns:1fr}}
