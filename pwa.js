@@ -1,21 +1,33 @@
 (function () {
     const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    let reloading = false;
 
-    if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-            navigator.serviceWorker.register("./sw.js").catch(error => {
-                console.error("Service Worker не зарегистрирован", error);
-            });
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+            try {
+                const registration = await navigator.serviceWorker.register('./sw.js?v=2.4.6', {
+                    updateViaCache: 'none'
+                });
+                await registration.update();
+
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (reloading) return;
+                    reloading = true;
+                    window.location.reload();
+                });
+            } catch (error) {
+                console.error('Service Worker не зарегистрирован', error);
+            }
         });
     }
 
-    window.addEventListener("load", () => {
-        const help = document.getElementById("installHelp");
+    window.addEventListener('load', () => {
+        const help = document.getElementById('installHelp');
         if (!help || isStandalone) return;
 
         if (isIos) {
-            help.classList.remove("hidden");
+            help.classList.remove('hidden');
             help.innerHTML = `
                 <strong>Установить на iPhone:</strong>
                 откройте меню <b>Поделиться</b> в Safari → <b>На экран «Домой»</b> → <b>Добавить</b>.
