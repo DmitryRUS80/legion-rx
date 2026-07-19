@@ -6,6 +6,8 @@ const clubNameInput = $("clubName");
 const eventDateInput = $("eventDate");
 const eventLocationInput = $("eventLocation");
 const eventStatusInput = $("eventStatus");
+const raceChampionshipInput = $("raceChampionshipId");
+const raceStageNumberInput = $("raceStageNumber");
 const publishAllowedInput = $("publishAllowed");
 const qualifyingSelect = $("qualifyingCount");
 const createRaceButton = $("createRace");
@@ -19,12 +21,21 @@ function escapeHtml(value) {
     return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
 
+function toggleChampionshipFields(){
+    const on=eventStatusInput.value === "championship";
+    $("championshipLinkFields")?.classList.toggle("hidden",!on);
+    $("championshipStageFields")?.classList.toggle("hidden",!on);
+}
+eventStatusInput.addEventListener("change", toggleChampionshipFields);
+
 function readRaceForm() {
     RaceData.eventName = eventNameInput.value.trim() || "Соревнование Legion RX";
     RaceData.clubName = clubNameInput.value.trim() || "Legion RC Penza";
     RaceData.eventDate = eventDateInput.value;
     RaceData.eventLocation = eventLocationInput.value.trim();
     RaceData.eventStatus = eventStatusInput.value;
+    RaceData.championshipId = eventStatusInput.value === "championship" ? raceChampionshipInput.value : "";
+    RaceData.championshipStageNumber = eventStatusInput.value === "championship" ? Number(raceStageNumberInput.value || 1) : null;
     RaceData.publishAllowed = publishAllowedInput.checked;
     RaceData.qualifyingCount = Number(qualifyingSelect.value);
     touchRace();
@@ -131,6 +142,7 @@ function getArchive() {
 }
 
 function archiveCurrentRace() {
+    if (typeof syncCurrentRaceToChampionship === "function") syncCurrentRaceToChampionship();
     if (!RaceData.id || !RaceData.pilots.length) {
         return alert("Нет текущего соревнования для сохранения.");
     }
@@ -279,10 +291,21 @@ function bindRouteButtons(root = document) {
 }
 
 function navigateTo(view, scrollId = "") {
-    const views = { home: $("homeView"), race: $("raceView"), archive: $("archiveView"), settings: $("settingsView") };
+    const views = { home: $("homeView"), race: $("raceView"), championships: $("championshipsView"), archive: $("archiveView"), help: $("helpView"), settings: $("settingsView") };
     Object.entries(views).forEach(([name, element]) => element?.classList.toggle("hidden", name !== view));
-    document.querySelectorAll(".navItem").forEach(item => item.classList.toggle("active", item.dataset.route === view && (!scrollId || item.dataset.scroll === scrollId)));
+
+    const inRace = view === "race";
+    $("appNav")?.classList.toggle("hidden", inRace);
+    $("raceNav")?.classList.toggle("hidden", !inRace);
+
+    document.querySelectorAll(".navItem").forEach(item => {
+        const sameRoute = item.dataset.route === view;
+        const sameSection = inRace ? (scrollId ? item.dataset.scroll === scrollId : item.dataset.scroll === "createSection") : true;
+        item.classList.toggle("active", sameRoute && sameSection);
+    });
     if (view === "archive") drawArchive();
+    if (view === "championships") drawChampionships();
+    if (view === "help") renderHelp("manual");
     if (view === "home") updateHomeSummary();
     requestAnimationFrame(() => {
         const target = scrollId ? document.getElementById(scrollId) : null;
@@ -322,28 +345,15 @@ $("showInstallInfo").addEventListener("click", () => {
 });
 bindRouteButtons();
 
-$("showRules").addEventListener("click", () => {
-    const panel = $("rulesPanel");
-    panel.innerHTML = `
-        <div class="rulesHeader"><div><span>LEGION RX</span><h2>Спортивный регламент v2.3</h2></div><button class="secondaryButton" onclick="document.getElementById('rulesPanel').classList.add('hidden')">Закрыть</button></div>
-        <div class="rulesGrid">
-            <article><b>Квалификация</b><p>3–5 серий. Всегда учитываются три лучших результата. Очки начисляются за место в своём заезде.</p></article>
-            <article><b>Тай-брейк</b><p>Best 3 → победы в зачётной тройке → вторые/третьи места → лучший отброшенный результат → последние квалификации → жеребьёвка.</p></article>
-            <article><b>Статусы</b><p>DNF получает 0 очков и ручной порядок схода. DNS и DSQ получают 0. DSQ не продвигается в следующий финал.</p></article>
-            <article><b>3–6 пилотов</b><p>A1 формирует старт A2. A2 определяет итог соревнования.</p></article>
-            <article><b>7–16 пилотов</b><p>Из нижних финалов проходят два лучших классифицированных. B полностью формирует решётку A.</p></article>
-            <article><b>Очки этапа</b><p>25–20–16–13–11–10–8–6–4–3–2–1. С 13 места — 0.</p></article>
-        </div>`;
-    panel.classList.remove("hidden");
-    panel.scrollIntoView({ behavior: "smooth", block: "start" });
-});
-
 if (loadFromBrowser()) {
     eventNameInput.value = RaceData.eventName || "";
     clubNameInput.value = RaceData.clubName || "";
     eventDateInput.value = RaceData.eventDate || "";
     eventLocationInput.value = RaceData.eventLocation || "";
     eventStatusInput.value = RaceData.eventStatus || "club";
+    refreshChampionshipSelectors();
+    raceChampionshipInput.value = RaceData.championshipId || "";
+    raceStageNumberInput.value = String(RaceData.championshipStageNumber || 1);
     publishAllowedInput.checked = Boolean(RaceData.publishAllowed);
     qualifyingSelect.value = String(RaceData.qualifyingCount || 4);
 } else {
@@ -354,3 +364,72 @@ drawPilots();
 restoreRaceView();
 updateHomeSummary();
 navigateTo("home");
+
+
+const HELP_SECTIONS={
+ manual:`<div class="guideContent"><h2>Руководство пользователя</h2><h3>1. Создание соревнования</h3><p>Выберите тип: этап чемпионата, клубная гонка, тренировка или тест. Для этапа укажите чемпионат и номер этапа.</p><h3>2. Участники</h3><p>Добавьте пилотов. При создании следующего этапа список пилотов сезона переносится автоматически: удалите из текущего этапа тех, кто не приехал, и добавьте новичков.</p><h3>3. Квалификация</h3><p>Создайте заезды, внесите результаты и сохраните каждую серию. В рейтинг входят три лучших результата.</p><h3>4. Финалы</h3><p>После квалификации сформируйте финалы, внесите статусы и порядок финиша. После главного финала формируется итоговый протокол.</p><h3>5. Завершение этапа</h3><p>Сохраните этап в архив. Для этапа чемпионата очки автоматически попадут в общий зачёт.</p><h3>6. Экспорт</h3><p>Кнопка «PDF / Печать» создаёт печатный документ, «Скачать PNG» — изображение итогов.</p></div>`,
+ raceguide:`<div class="guideContent">
+<h2>Правила проведения RC RallyCross</h2>
+
+<h3>Квалификация</h3>
+<p><b>Старт с места.</b> В одном квалификационном заезде участвует до 6 машин. Если участников больше, программа распределяет пилотов по заездам максимально равномерно. Дистанция квалификации — <b>5 кругов</b>.</p>
+<div class="raceGuideVisual">
+  <div class="guideVisualTitle">Квалификация — стартовые позиции</div>
+  <div class="rxGridDiagram rxQualifyingGrid" role="img" aria-label="В квалификации шесть машин стоят в один ряд: позиции с первой по шестую">
+    <div class="rxDirection"><span>↑</span><b>НАПРАВЛЕНИЕ ДВИЖЕНИЯ</b></div>
+    <div class="rxTrack"><div class="rxQualifyingRow">
+      <span class="rxCar pole"><i></i><b>1</b></span><span class="rxCar"><i></i><b>2</b></span><span class="rxCar"><i></i><b>3</b></span><span class="rxCar"><i></i><b>4</b></span><span class="rxCar"><i></i><b>5</b></span><span class="rxCar"><i></i><b>6</b></span>
+    </div></div>
+  </div>
+  <p class="guideCaption">Все машины стоят в одну линию. Отдельная П-образная стартовая скоба расположена <b>над каждой машиной</b> и не касается её корпуса. Позиция 1 — внутренняя стартовая позиция.</p>
+</div>
+
+<h3>Зачёт квалификации</h3>
+<p>Проводится 3–5 серий. В зачёт идут три лучших результата (<b>Best 3</b>). При равенстве применяются тай-брейки: сумма Best 3, количество побед, вторых и третьих мест, отброшенный результат, более поздние серии, затем жеребьёвка.</p>
+
+<h3>Финальная стадия</h3>
+<p>Дистанция каждого финального заезда — <b>7 кругов</b>. Результаты квалификации определяют посев, распределение по полуфиналам и преимущество при формировании стартовой решётки следующего финала. Победителем этапа становится победитель <b>Финала A</b>.</p>
+
+<div class="rxRuleCards">
+  <div class="rxRuleCard"><strong>До 6 участников</strong><span>Все пилоты сразу выходят в Финал A. Стартовые позиции 1–6 занимают строго по итоговому месту в квалификации.</span></div>
+  <div class="rxRuleCard"><strong>От 7 до 12 участников</strong><span>Формируются два полуфинала — B и C. Из каждого полуфинала в Финал A проходят <b>3 лучших пилота</b>. Остальные выбывают.</span></div>
+  <div class="rxRuleCard"><strong>Более 12 участников</strong><span>Автоматически создаются предварительные финалы D, E, F и далее. Из каждого заезда <b>3 лучших</b> переходят на следующий уровень, пока не будут сформированы полуфиналы B и C.</span></div>
+</div>
+
+<h3>Как формируется старт Финала A</h3>
+<p>В Финал A выходят по три пилота из полуфиналов B и C. Стартовые места назначаются <b>по результату полуфинала</b>, а внутри одинаковых мест — <b>по результату квалификации</b>.</p>
+<div class="rxGridOrder">
+  <div><b>Позиции 1–2</b><span>Два победителя полуфиналов. Поул получает тот, кто был выше в квалификации.</span></div>
+  <div><b>Позиции 3–4</b><span>Два пилота, занявшие вторые места. Выше стартует пилот с лучшим результатом квалификации.</span></div>
+  <div><b>Позиции 5–6</b><span>Два пилота, занявшие третьи места. Выше стартует пилот с лучшим результатом квалификации.</span></div>
+</div>
+<p class="rxFormula"><b>Порядок решётки:</b> победители B/C → вторые места B/C → третьи места B/C. В каждой паре преимущество получает пилот, который был выше в квалификации.</p>
+
+<div class="raceGuideVisual">
+  <div class="guideVisualTitle">Финал A — стартовые позиции</div>
+  <div class="rxGridDiagram rxFinalGrid" role="img" aria-label="В финале машины стоят в три смещённых ряда: один и два впереди, три и четыре во втором ряду, пять и шесть в третьем">
+    <div class="rxDirection"><span>↑</span><b>НАПРАВЛЕНИЕ ДВИЖЕНИЯ</b></div>
+    <div class="rxTrack"><div class="rxFinalRows">
+      <div class="rxFinalRow rowOne"><span class="rxCar pole"><i></i><b>1</b></span><span class="rxCar"><i></i><b>2</b></span></div>
+      <div class="rxFinalRow rowTwo"><span class="rxCar"><i></i><b>3</b></span><span class="rxCar"><i></i><b>4</b></span></div>
+      <div class="rxFinalRow rowThree"><span class="rxCar"><i></i><b>5</b></span><span class="rxCar"><i></i><b>6</b></span></div>
+    </div></div>
+  </div>
+  <p class="guideCaption">Позиции 1–2 — первый ряд, 3–4 — второй, 5–6 — третий. П-образная стартовая скоба находится отдельно <b>над машиной</b>. Позиция 1 — поул.</p>
+
+  <div class="rxProgression" role="img" aria-label="Три лучших из полуфинала B и три лучших из полуфинала C проходят в Финал A">
+    <div class="rxProgressFinal"><span>ГЛАВНЫЙ ЗАЕЗД</span><b>ФИНАЛ A</b><em>6 пилотов</em></div>
+    <div class="rxProgressLinks"><div class="rxProgressLink"><span class="rxAdvanceCount">↑ 3 ЛУЧШИХ</span><i></i></div><div class="rxProgressLink"><span class="rxAdvanceCount">↑ 3 ЛУЧШИХ</span><i></i></div></div>
+    <div class="rxProgressSemis"><div class="rxProgressBlock"><span>ПОЛУФИНАЛ</span><b>B</b><em>до 6 пилотов</em></div><div class="rxProgressBlock"><span>ПОЛУФИНАЛ</span><b>C</b><em>до 6 пилотов</em></div></div>
+    <div class="rxPreliminaryRule"><strong>ПРЕДВАРИТЕЛЬНЫЕ ФИНАЛЫ D, E, F…</strong><span>Из каждого нижнего заезда <b>3 лучших пилота</b> переходят выше. Процесс повторяется до формирования полуфиналов B и C.</span></div>
+  </div>
+</div>
+
+<h3>Очки этапа</h3>
+<p>Очки получают первые 10 пилотов по системе <b>25–18–15–12–10–8–6–4–2–1</b>. С 11-го места — 0 очков.</p>
+<div class="pointsGuide"><span><b>1</b>25</span><span><b>2</b>18</span><span><b>3</b>15</span><span><b>4</b>12</span><span><b>5</b>10</span><span><b>6</b>8</span><span><b>7</b>6</span><span><b>8</b>4</span><span><b>9</b>2</span><span><b>10</b>1</span></div>
+</div>`,
+ terms:`<div class="guideContent"><h2>Обозначения</h2><dl class="termsList"><dt>DNS</dt><dd>Did Not Start — пилот не стартовал.</dd><dt>DNF</dt><dd>Did Not Finish — пилот стартовал, но не финишировал.</dd><dt>DSQ</dt><dd>Disqualified — дисквалификация; очки не начисляются и продвижение в следующий финал невозможно.</dd><dt>DNQ</dt><dd>Did Not Qualify — пилот не прошёл квалификационный отбор.</dd></dl></div>`};
+function renderHelp(key){document.querySelectorAll('.helpTab').forEach(b=>b.classList.toggle('active',b.dataset.help===key));$('helpContent').innerHTML=HELP_SECTIONS[key]||HELP_SECTIONS.manual}
+document.querySelectorAll('.helpTab').forEach(b=>b.addEventListener('click',()=>renderHelp(b.dataset.help)));
+initChampionships(); toggleChampionshipFields();

@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-title" content="Legion RX">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-    <title>Legion RX</title>
+    <title>Legion RX v2.4 Championship Edition</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,7 +20,7 @@
             <div class="brandMark"><span>LEGION</span><b>RX</b></div>
             <small>RallyCross Manager</small>
         </div>
-        <div class="versionBadge">v2.3</div>
+        <div class="versionBadge">v2.4.3</div>
     </header>
 
     <div id="installHelp" class="installHelp hidden"></div>
@@ -31,6 +31,7 @@
                 <img src="assets/legion-rx-hero.jpg" alt="Legion RX — менеджер соревнований RallyCross">
                 <div class="heroShowcaseActions">
                     <button class="primaryAction" id="homeNewRace">Новая гонка</button>
+                    <button class="secondaryButton" data-route="championships">Чемпионаты</button>
                     <button class="secondaryButton" data-route="archive">Архив соревнований</button>
                 </div>
             </div>
@@ -45,6 +46,7 @@
             </div>
 
             <div class="menuGrid">
+                <button class="menuCard championshipMenuCard" data-route="championships"><span class="menuIcon">🏆</span><span><b>Чемпионаты</b><small>Сезоны, этапы и общий зачёт</small></span><i>›</i></button>
                 <button class="menuCard activeCard" data-route="race" data-scroll="createSection">
                     <span class="menuIcon">⚑</span><span><b>Соревнование</b><small>Настройки этапа и пилоты</small></span><i>›</i>
                 </button>
@@ -93,13 +95,21 @@
                         <input id="eventLocation" type="text" placeholder="Пенза, зал / трасса">
                     </div>
                     <div>
-                        <label for="eventStatus">Статус</label>
+                        <label for="eventStatus">Тип соревнования</label>
                         <select id="eventStatus">
-                            <option value="official">Официальное</option>
-                            <option value="club" selected>Клубное</option>
+                            <option value="championship">Этап чемпионата</option>
+                            <option value="club" selected>Клубная гонка</option>
                             <option value="training">Тренировочное</option>
                             <option value="test">Тестовое</option>
                         </select>
+                    </div>
+                    <div id="championshipLinkFields" class="hidden">
+                        <label for="raceChampionshipId">Чемпионат</label>
+                        <select id="raceChampionshipId"></select>
+                    </div>
+                    <div id="championshipStageFields" class="hidden">
+                        <label for="raceStageNumber">Номер этапа</label>
+                        <input id="raceStageNumber" type="number" min="1" value="1">
                     </div>
                     <div>
                         <label for="qualifyingCount">Количество квалификаций</label>
@@ -166,6 +176,22 @@
             </section>
         </div>
 
+
+        <section id="championshipsView" class="appScreen hidden">
+            <div class="screenHero"><div><span>CHAMPIONSHIP EDITION</span><h1>Чемпионаты</h1></div><button class="ghostAction" data-route="home">← Меню</button></div>
+            <section class="card featureCard">
+                <div class="cardLabel">НОВЫЙ СЕЗОН</div><h2>Создать чемпионат</h2>
+                <div class="formGrid">
+                    <div><label for="champName">Название</label><input id="champName" placeholder="Legion RX Cup"></div>
+                    <div><label for="champSeason">Сезон</label><input id="champSeason" type="number" min="2020" max="2100"></div>
+                    <div><label for="champStagesPlanned">План этапов</label><input id="champStagesPlanned" type="number" min="1" max="30" value="6"></div>
+                </div>
+                <button id="createChampionship">Создать чемпионат</button>
+            </section>
+            <section class="card"><div class="sectionTitleRow"><div><div class="cardLabel">СЕЗОНЫ</div><h2>Мои чемпионаты</h2></div></div><div id="championshipList"></div></section>
+            <section id="championshipDetail" class="card hidden"></section>
+        </section>
+
         <section id="archiveView" class="appScreen card hidden">
             <div class="screenHero compactHero"><div><span>ИСТОРИЯ</span><h1>Архив</h1></div><button class="ghostAction" data-route="home">← Меню</button></div>
             <div class="sectionTitleRow">
@@ -181,24 +207,38 @@
             <div id="archiveList"></div>
         </section>
 
+
+        <section id="helpView" class="appScreen card hidden">
+          <div class="screenHero compactHero"><div><span>СПРАВКА</span><h1>Руководства и правила</h1></div><button class="ghostAction" data-route="home">← Меню</button></div>
+          <div class="helpTabs"><button class="helpTab active" data-help="manual">Руководство</button><button class="helpTab" data-help="raceguide">Правила гонки</button><button class="helpTab" data-help="terms">Обозначения</button></div>
+          <div id="helpContent"></div>
+        </section>
+
         <section id="settingsView" class="appScreen card hidden">
             <div class="screenHero compactHero"><div><span>СИСТЕМА</span><h1>Настройки</h1></div><button class="ghostAction" data-route="home">← Меню</button></div>
             <div class="settingsGrid">
                 <article class="settingsCard"><span>↧</span><div><h3>Экспорт гонки</h3><p>Сохранить полную резервную копию в JSON.</p></div><button id="exportRace">Скачать</button></article>
                 <article class="settingsCard dangerSettings"><span>×</span><div><h3>Отменить текущую гонку</h3><p>Удалить незавершённую гонку. Архив не пострадает.</p></div><button id="clearRace">Отменить</button></article>
                 <article class="settingsCard"><span>▣</span><div><h3>PWA-приложение</h3><p>Устанавливается на экран iPhone и работает офлайн.</p></div><button id="showInstallInfo">Инструкция</button></article>
-                <article class="settingsCard"><span>§</span><div><h3>Регламент v2.3</h3><p>Best 3, тай-брейки, DNF/DNS/DSQ и финальная лестница.</p></div><button id="showRules">Открыть</button></article>
+                <article class="settingsCard"><span>?</span><div><h3>Руководства и правила</h3><p>Работа с приложением, формат гонки и обозначения.</p></div><button data-route="help">Открыть</button></article>
             </div>
             <div id="rulesPanel" class="rulesPanel hidden"></div>
         </section>
     </main>
 
     <nav class="bottomNav" aria-label="Навигация">
-        <button class="navItem active" data-route="home"><span>⌂</span><small>Главная</small></button>
-        <button class="navItem" data-route="race" data-scroll="createSection"><span>⚑</span><small>Гонка</small></button>
-        <button class="navItem" data-route="race" data-scroll="qualifyingBlock"><span>⌁</span><small>Квалы</small></button>
-        <button class="navItem" data-route="race" data-scroll="finalsSection"><span>♛</span><small>Финалы</small></button>
-        <button class="navItem" data-route="race" data-scroll="protocolSection"><span>▥</span><small>Итог</small></button>
+        <div id="appNav" class="navGroup">
+            <button class="navItem active" data-route="home"><span>⌂</span><small>Главная</small></button>
+            <button class="navItem" data-route="championships"><span>🏆</span><small>Чемпионаты</small></button>
+            <button class="navItem" data-route="archive"><span>▤</span><small>Архив</small></button>
+            <button class="navItem" data-route="settings"><span>⚙</span><small>Настройки</small></button>
+        </div>
+        <div id="raceNav" class="navGroup hidden">
+            <button class="navItem active" data-route="race" data-scroll="createSection"><span>♟</span><small>Участники</small></button>
+            <button class="navItem" data-route="race" data-scroll="qualifyingBlock"><span>⌁</span><small>Квалификация</small></button>
+            <button class="navItem" data-route="race" data-scroll="finalsSection"><span>♛</span><small>Финалы</small></button>
+            <button class="navItem" data-route="race" data-scroll="protocolSection"><span>▥</span><small>Итог</small></button>
+        </div>
     </nav>
 </div>
 
@@ -208,6 +248,7 @@
 <script src="score.js"></script>
 <script src="qualifying.js"></script>
 <script src="finals.js"></script>
+<script src="championship.js"></script>
 <script src="app.js"></script>
 <script src="pwa.js"></script>
 </body>

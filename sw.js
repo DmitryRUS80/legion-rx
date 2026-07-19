@@ -1,4 +1,4 @@
-const CACHE_NAME = "legion-rx-v2-3-regulation";
+const CACHE_NAME = 'legion-rx-v2.4-finals-manual-q2';
 const APP_FILES = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const APP_FILES = [
   "./score.js",
   "./qualifying.js",
   "./finals.js",
+  "./championship.js",
   "./app.js",
   "./pwa.js",
   "./manifest.webmanifest",

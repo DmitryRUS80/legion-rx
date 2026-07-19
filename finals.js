@@ -1,6 +1,6 @@
 /* Legion RallyCross Manager v2.3 */
 
-const FINAL_LEVELS = { A: 100, A2: 100, A1: 90, B: 90, C: 80, D: 70, E: 60, F: 50 };
+const FINAL_LEVELS = { A: 100, B: 90, C: 89, D: 80, E: 70, F: 60 };
 const LOWER_FINAL_NAMES = ["C", "D", "E", "F"];
 
 function createFinal(name, pilots, enabled = false, basePilots = pilots) {
@@ -13,6 +13,23 @@ function createFinal(name, pilots, enabled = false, basePilots = pilots) {
         saved: false,
         enabled
     };
+}
+
+function snakeSplit(pilots) {
+    const groups = [[], []];
+    let index = 0;
+    let direction = 1;
+    pilots.forEach(pilot => {
+        groups[index].push(pilot);
+        if (direction === 1) {
+            if (index === 1) direction = -1;
+            else index += 1;
+        } else {
+            if (index === 0) direction = 1;
+            else index -= 1;
+        }
+    });
+    return groups;
 }
 
 function generateFinals() {
@@ -29,22 +46,28 @@ function generateFinals() {
     const pilots = [...RaceData.pilots];
 
     if (pilots.length <= 6) {
-        RaceData.finals.push(createFinal("A1", pilots, true));
-        RaceData.finals.push(createFinal("A2", [], false, []));
+        RaceData.finals.push(createFinal("A", pilots, true));
+    } else if (pilots.length <= 12) {
+        const [semiB, semiC] = snakeSplit(pilots);
+        RaceData.finals.push(createFinal("B", semiB, true));
+        RaceData.finals.push(createFinal("C", semiC, true));
+        RaceData.finals.push(createFinal("A", [], false, []));
     } else {
-        RaceData.finals.push(createFinal("B", pilots.slice(0, 4), false));
-        let remaining = pilots.slice(4);
-        let lowerIndex = 0;
-
-        while (remaining.length > 6) {
-            const name = LOWER_FINAL_NAMES[lowerIndex];
-            RaceData.finals.push(createFinal(name, remaining.slice(0, 4), false));
-            remaining = remaining.slice(4);
-            lowerIndex += 1;
-        }
-
-        const bottomName = LOWER_FINAL_NAMES[lowerIndex];
-        RaceData.finals.push(createFinal(bottomName, remaining, true));
+        // Для больших составов сохраняется автоматическая нижняя сетка.
+        // Нижние финалы поднимают по 3 пилота, после чего формируются B и C.
+        const directSemiCount = Math.max(0, 12 - Math.ceil((pilots.length - 12) / 6) * 3);
+        const direct = pilots.slice(0, directSemiCount);
+        const remaining = pilots.slice(directSemiCount);
+        const prelimCount = Math.max(1, Math.ceil(remaining.length / 6));
+        const prelimGroups = Array.from({ length: prelimCount }, () => []);
+        remaining.forEach((pilot, index) => prelimGroups[index % prelimCount].push(pilot));
+        const [semiBBase, semiCBase] = snakeSplit(direct);
+        RaceData.finals.push(createFinal("B", semiBBase, false));
+        RaceData.finals.push(createFinal("C", semiCBase, false));
+        prelimGroups.forEach((group, index) => {
+            const name = LOWER_FINAL_NAMES[index] || `P${index + 1}`;
+            RaceData.finals.push(createFinal(name, group, true));
+        });
         RaceData.finals.push(createFinal("A", [], false, []));
     }
 
@@ -63,26 +86,23 @@ function getFinalPilots(final) {
 }
 
 function getHigherFinal(name) {
-    if (name === "B") return finalByName("A");
-    const alphabet = ["B", "C", "D", "E", "F"];
-    const index = alphabet.indexOf(name);
-    return index > 0 ? finalByName(alphabet[index - 1]) : null;
+    if (name === "B" || name === "C") return finalByName("A");
+    return null;
 }
 
 function getFinalRule(final) {
-    if (final.name === "A1") return { title: "Первый финальный заезд", text: "Все пилоты едут A1. Финишировавшие и DNF формируют сетку A2; DNS ставится в конец, DSQ исключается.", advance: "Классифицированные → A2" };
-    if (final.name === "A2") return { title: "Решающий финал", text: "Результат A2 полностью определяет итог соревнования.", advance: "Итог" };
-    if (final.name === "A") return { title: "Главный финал", text: "Главный финал определяет итоговые места и очки этапа.", advance: "Итог" };
-    if (final.name === "B") return { title: "Предфинал B", text: "Все классифицированные пилоты B переходят в A в финишном порядке. DNS и DSQ не переходят.", advance: "Классифицированные → A" };
-    const higher = getHigherFinal(final.name);
-    return { title: `Отборочный финал ${final.name}`, text: `Два лучших классифицированных пилота переходят в ${higher?.name || "B"}. Сначала финишировавшие, затем DNF по порядку схода.`, advance: `Лучшие 2 → ${higher?.name || "B"}` };
+    if (final.name === "A") return { title: "Главный финал", text: "Главный финал полностью определяет итоговые места и очки этапа.", advance: "Итог соревнования" };
+    if (final.name === "B" || final.name === "C") return { title: `Полуфинал ${final.name}`, text: "Три лучших классифицированных пилота проходят в Финал A. Стартовая решётка A: сначала победители полуфиналов, затем вторые места, затем третьи; внутри каждой пары выше стоит пилот с лучшим результатом квалификации.", advance: "3 лучших → Финал A" };
+    return { title: `Отборочный финал ${final.name}`, text: "Три лучших классифицированных пилота переходят в полуфиналы. Порядок посева сохраняет преимущество квалификации.", advance: "3 лучших → полуфиналы" };
 }
 
 function drawFinalsExplanation() {
     const element = document.getElementById("finalsExplanation");
     if (!element) return;
-    const route = [...RaceData.finals].sort((a,b) => a.order-b.order).map(final => final.name).join(" → ");
-    element.innerHTML = `<div class="finalsGuide"><h3>Схема Legion RX</h3><p>${escapeHtml(route)}</p><p class="guideNote">Нижние финалы пропускают двух лучших вверх. B является предфиналом: его классифицированный порядок формирует решётку A.</p></div>`;
+    const hasSemis = Boolean(finalByName("B") && finalByName("C"));
+    element.innerHTML = hasSemis
+        ? `<div class="finalsGuide"><h3>Схема Legion RX</h3><p>Полуфинал B + Полуфинал C → Финал A</p><p class="guideNote">Из каждого полуфинала проходят 3 лучших. Решётка A формируется по месту в полуфинале, а при одинаковом месте преимущество получает пилот, стоявший выше в квалификации.</p></div>`
+        : `<div class="finalsGuide"><h3>Схема Legion RX</h3><p>Финал A</p><p class="guideNote">При составе до 6 пилотов все участники напрямую стартуют в Финале A по результатам квалификации.</p></div>`;
 }
 
 function buildGridHtml(pilots) {
@@ -247,29 +267,58 @@ function saveFinal(finalName) {
     saveToBrowser();
 }
 
+function qualificationRankMap() {
+    const map = new Map();
+    RaceData.pilots.forEach((pilot, index) => map.set(String(pilot.id), index + 1));
+    return map;
+}
+
+function buildFinalAGridFromSemis() {
+    const semiB = finalByName("B");
+    const semiC = finalByName("C");
+    const finalA = finalByName("A");
+    if (!semiB || !semiC || !finalA || !semiB.saved || !semiC.saved) return;
+
+    const qRank = qualificationRankMap();
+    const qualifiers = [];
+    [semiB, semiC].forEach(semi => {
+        classifiedForAdvancement(semi.result, false).slice(0, 3).forEach((item, index) => {
+            qualifiers.push({ pilotId: item.pilotId, semiPlace: index + 1 });
+        });
+    });
+
+    qualifiers.sort((a, b) => {
+        if (a.semiPlace !== b.semiPlace) return a.semiPlace - b.semiPlace;
+        return (qRank.get(String(a.pilotId)) || 9999) - (qRank.get(String(b.pilotId)) || 9999);
+    });
+
+    finalA.pilots = qualifiers.map(item => item.pilotId).slice(0, 6);
+    finalA.enabled = finalA.pilots.length > 0;
+    if (!finalA.enabled) buildFinalProtocol(semiC);
+}
+
 function advanceFinalists(final) {
-    if (final.name === "A1") {
-        const a2 = finalByName("A2");
-        a2.pilots = classifiedForAdvancement(final.result, true).map(item => item.pilotId).slice(0, 6);
-        a2.enabled = a2.pilots.length > 0;
-        if (!a2.enabled) buildFinalProtocol(final);
+    if (final.name === "B" || final.name === "C") {
+        buildFinalAGridFromSemis();
         return;
     }
 
-    if (final.name === "B") {
-        const a = finalByName("A");
-        a.pilots = classifiedForAdvancement(final.result, false).map(item => item.pilotId).slice(0, 6);
-        a.enabled = a.pilots.length > 0;
-        if (!a.enabled) buildFinalProtocol(final);
-        return;
-    }
-
-    if (final.name !== "A" && final.name !== "A2") {
-        const higher = getHigherFinal(final.name);
-        if (higher) {
-            const advancing = classifiedForAdvancement(final.result, false).slice(0, 2).map(item => item.pilotId);
-            higher.pilots = [...new Set([...higher.basePilots, ...advancing])].slice(0, 6);
-            higher.enabled = true;
+    if (final.name !== "A") {
+        const advancing = classifiedForAdvancement(final.result, false).slice(0, 3).map(item => item.pilotId);
+        const semiB = finalByName("B");
+        const semiC = finalByName("C");
+        if (semiB && semiC) {
+            advancing.forEach(pilotId => {
+                const target = semiB.pilots.length <= semiC.pilots.length ? semiB : semiC;
+                if (!target.pilots.includes(pilotId)) target.pilots.push(pilotId);
+            });
+            const preliminaries = RaceData.finals.filter(item => !["A","B","C"].includes(item.name));
+            if (preliminaries.every(item => item.saved)) {
+                semiB.pilots.sort((a,b) => (qualificationRankMap().get(String(a))||9999) - (qualificationRankMap().get(String(b))||9999));
+                semiC.pilots.sort((a,b) => (qualificationRankMap().get(String(a))||9999) - (qualificationRankMap().get(String(b))||9999));
+                semiB.enabled = true;
+                semiC.enabled = true;
+            }
         }
         return;
     }
@@ -281,6 +330,28 @@ function editFinal(finalName) {
     const final = finalByName(finalName);
     if (!final?.saved) return;
     if (!confirm("Исправление результата сбросит этот и все последующие финалы. Продолжить?")) return;
+
+    if (finalName === "B" || finalName === "C") {
+        const finalA = finalByName("A");
+        RaceData.pilots.forEach(pilot => {
+            pilot.finalResults = pilot.finalResults.filter(result => result.final !== finalName && result.final !== "A");
+        });
+        final.result = [];
+        final.saved = false;
+        final.enabled = true;
+        if (finalA) {
+            finalA.pilots = [];
+            finalA.result = [];
+            finalA.saved = false;
+            finalA.enabled = false;
+        }
+        RaceData.finalProtocol = [];
+        RaceData.stage = "finals";
+        saveToBrowser();
+        drawFinalsExplanation();
+        drawFinals();
+        return;
+    }
 
     const editedOrder = final.order;
     RaceData.pilots.forEach(pilot => {
@@ -351,6 +422,7 @@ function buildFinalProtocol(mainFinal) {
     }));
     RaceData.stage = "finished";
     drawFinalProtocol();
+    if (typeof syncCurrentRaceToChampionship === "function") syncCurrentRaceToChampionship();
     saveToBrowser();
 }
 
@@ -359,13 +431,15 @@ function drawFinalProtocol() {
     const block = document.getElementById("protocolBlock");
     if (!section || !block || !RaceData.finalProtocol.length) return;
     section.classList.remove("hidden");
-
-    let html = `<div class="protocolMeta"><strong>${escapeHtml(RaceData.eventName)}</strong><span>${escapeHtml(RaceData.clubName || "")}</span><span>${escapeHtml(RaceData.eventDate || "")} ${escapeHtml(RaceData.eventLocation || "")}</span></div><div class="podium">`;
+    const standings = [...RaceData.pilots].sort(comparePilots);
+    let html = `<div class="protocolMeta"><strong>${escapeHtml(RaceData.eventName)}</strong><span>${escapeHtml(RaceData.clubName || "")}</span><span>${escapeHtml(RaceData.eventDate || "")} ${escapeHtml(RaceData.eventLocation || "")}</span><span>${RaceData.eventStatus === 'championship' ? `Этап ${RaceData.championshipStageNumber || ''} чемпионата` : escapeHtml(RaceData.eventStatus || '')}</span></div><div class="podium">`;
     RaceData.finalProtocol.slice(0,3).forEach(item => html += `<div class="podiumPlace place${item.place}"><span>${item.place}</span>${escapeHtml(getPilot(item.pilotId)?.name || "—")}</div>`);
-    html += `</div><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th><th>Источник</th><th>Очки этапа</th></tr></thead><tbody>`;
-    RaceData.finalProtocol.forEach(item => {
-        html += `<tr><td>${item.place}</td><td>${escapeHtml(getPilot(item.pilotId)?.name || "—")}</td><td>${escapeHtml(item.source)}${item.status !== "FIN" ? ` · ${escapeHtml(item.status)}` : ""}</td><td>${item.eventPoints}</td></tr>`;
-    });
-    block.innerHTML = `${html}</tbody></table></div>`;
+    html += `</div><h3>Итоговая классификация</h3><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th><th>Источник</th><th>Очки этапа</th></tr></thead><tbody>`;
+    RaceData.finalProtocol.forEach(item => html += `<tr><td>${item.place}</td><td>${escapeHtml(getPilot(item.pilotId)?.name || "—")}</td><td>${escapeHtml(item.source)}${item.status !== "FIN" ? ` · ${escapeHtml(item.status)}` : ""}</td><td>${item.eventPoints}</td></tr>`);
+    html += `</tbody></table></div><h3>Квалификационный рейтинг</h3><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th><th>Best 3</th><th>Результаты серий</th></tr></thead><tbody>`;
+    standings.forEach((p,i)=>html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td>${p.best3||0}</td><td>${(p.qualifying||[]).map(q=>q.status&&q.status!=='FIN'?q.status:(q.points??'—')).join(' · ')}</td></tr>`);
+    html += `</tbody></table></div><h3>Результаты финалов</h3>`;
+    (RaceData.finals||[]).filter(f=>f.saved).forEach(f=>{html+=`<h4>${escapeHtml(f.name)}</h4><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th><th>Статус</th></tr></thead><tbody>`;(f.result||[]).forEach((r,i)=>html+=`<tr><td>${i+1}</td><td>${escapeHtml(getPilot(r.pilotId)?.name||'—')}</td><td>${escapeHtml(r.status||'FIN')}</td></tr>`);html+='</tbody></table></div>'});
+    block.innerHTML = html;
     section.scrollIntoView({ behavior: "smooth", block: "start" });
 }

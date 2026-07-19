@@ -7,6 +7,8 @@ const RaceData = {
     eventDate: "",
     eventLocation: "",
     eventStatus: "club",
+    championshipId: "",
+    championshipStageNumber: null,
     publishAllowed: false,
     qualifyingCount: 4,
     pilots: [],
@@ -19,7 +21,7 @@ const RaceData = {
     updatedAt: ""
 };
 
-const EVENT_POINTS = [25, 20, 16, 13, 11, 10, 8, 6, 4, 3, 2, 1];
+const EVENT_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 
 class Pilot {
     constructor(name) {
