@@ -17,6 +17,8 @@ const RaceData = {
     finalProtocol: [],
     exactTieLots: {},
     stage: "setup",
+    lifecycleStatus: "active",
+    completedAt: "",
     createdAt: "",
     updatedAt: ""
 };
@@ -53,6 +55,8 @@ function resetRaceResults() {
     RaceData.finalProtocol = [];
     RaceData.exactTieLots = {};
     RaceData.stage = "setup";
+    RaceData.lifecycleStatus = "active";
+    RaceData.completedAt = "";
 
     RaceData.pilots.forEach(pilot => {
         pilot.qualifying = [];

@@ -393,3 +393,19 @@ button{
  .rxFinalRow.rowTwo{transform:translateX(55px)}
  .rxFinalRow.rowThree{transform:translateX(110px)}
 }
+
+
+/* v3.0.4 — stagger the actual race starting grid, matching the regulations diagram */
+.startGrid{overflow:visible}
+/* Shift by exactly half/full distance between the two grid columns, so car 3 sits between cars 1 and 2. */
+.startGridEntry:nth-child(3),.startGridEntry:nth-child(4){transform:translateX(calc(50% + 27px))}
+.startGridEntry:nth-child(5),.startGridEntry:nth-child(6){transform:translateX(calc(100% + 54px))}
+.finalsStandingsPanel{margin-top:28px}
+.finalsRankingTable td,.finalsRankingTable th{text-align:center}
+.finalsRankingTable td:nth-child(2),.finalsRankingTable th:nth-child(2){text-align:left}
+.finalsRankingNote{margin:10px 2px 0;color:#8e96a2;font-size:12px;line-height:1.45}
+@media(max-width:620px){
+ .startGridEntry:nth-child(3),.startGridEntry:nth-child(4){transform:translateX(calc(50% + 10px))}
+ .startGridEntry:nth-child(5),.startGridEntry:nth-child(6){transform:translateX(calc(100% + 20px))}
+ .finalsStandingsPanel{padding:12px 8px}
+}

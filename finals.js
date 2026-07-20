@@ -248,6 +248,7 @@ function drawFinals() {
         block.insertAdjacentHTML("beforeend", `${html}</article>`);
     });
     bindFinalSelectors();
+    drawFinalsStandings();
 }
 
 function parseFinalResults(finalName) {
@@ -395,20 +396,64 @@ function buildMainStandings() {
     const mainFinals = FINAL_A_RUNS.map(finalByName).filter(Boolean);
     const pilotIds = mainFinals[0]?.pilots || [];
     return pilotIds.map(pilotId => {
-        const results = mainFinals.map(final => final.result.find(item => String(item.pilotId) === String(pilotId)) || { status: "DNS" });
-        const scores = results.map(mainRunScore);
-        const bestTwo = [...scores].sort((a, b) => a - b).slice(0, 2);
+        // A run that has not been completed yet is shown as “—”, not as a DNS penalty.
+        const results = mainFinals.map(final => final.saved
+            ? (final.result.find(item => String(item.pilotId) === String(pilotId)) || { status: "DNS" })
+            : null);
+        const scores = results.map(item => item ? mainRunScore(item) : null);
+        const completedScores = scores.filter(Number.isFinite);
+        const bestTwo = [...completedScores].sort((a, b) => a - b).slice(0, 2);
+        const latestCompleted = [...scores].reverse().find(Number.isFinite);
         return {
             pilotId,
             results,
             scores,
-            total: bestTwo.reduce((sum, value) => sum + value, 0),
-            wins: results.filter(item => item.status === "FIN" && item.place === 1).length,
-            seconds: results.filter(item => item.status === "FIN" && item.place === 2).length,
-            lastScore: mainRunScore(results[2]),
+            bestTwo,
+            total: bestTwo.length ? bestTwo.reduce((sum, value) => sum + value, 0) : null,
+            wins: results.filter(item => item?.status === "FIN" && item.place === 1).length,
+            seconds: results.filter(item => item?.status === "FIN" && item.place === 2).length,
+            lastScore: latestCompleted ?? 9999,
             qRank: qRank.get(String(pilotId)) || 9999
         };
-    }).sort((a, b) => a.total - b.total || b.wins - a.wins || b.seconds - a.seconds || a.lastScore - b.lastScore || a.qRank - b.qRank);
+    }).sort((a, b) => {
+        if (a.total === null && b.total !== null) return 1;
+        if (a.total !== null && b.total === null) return -1;
+        if (a.total !== b.total) return (a.total ?? 9999) - (b.total ?? 9999);
+        return b.wins - a.wins || b.seconds - a.seconds || a.lastScore - b.lastScore || a.qRank - b.qRank;
+    });
+}
+
+function formatMainStandingScore(result, score) {
+    if (!result || score === null) return "—";
+    if (result.status === "FIN") return String(score);
+    return `${score} · ${escapeHtml(result.status)}`;
+}
+
+function drawFinalsStandings() {
+    const block = document.getElementById("finalsStandings");
+    if (!block) return;
+    const mainFinals = FINAL_A_RUNS.map(finalByName).filter(Boolean);
+    const standings = buildMainStandings();
+    if (!mainFinals.length || !standings.length || !mainFinals[0]?.pilots?.length) {
+        block.innerHTML = "Состав Финала A появится после завершения отбора.";
+        return;
+    }
+    let html = `<div class="tableWrap"><table class="finalsRankingTable"><thead><tr><th>Место</th><th>Пилот</th><th>A1</th><th>A2</th><th>A3</th><th>Лучшие 2</th></tr></thead><tbody>`;
+    standings.forEach((row, index) => {
+        const counted = new Set();
+        row.scores.forEach((score, scoreIndex) => {
+            if (!Number.isFinite(score)) return;
+            const candidates = row.scores.map((value, i) => ({ value, i })).filter(item => Number.isFinite(item.value)).sort((a, b) => a.value - b.value || a.i - b.i).slice(0, 2);
+            if (candidates.some(item => item.i === scoreIndex)) counted.add(scoreIndex);
+        });
+        html += `<tr><td>${index + 1}</td><td>${escapeHtml(getPilot(row.pilotId)?.name || "—")}</td>`;
+        row.scores.forEach((score, scoreIndex) => {
+            html += `<td class="${counted.has(scoreIndex) ? "bestScoreCell" : ""}">${formatMainStandingScore(row.results[scoreIndex], score)}</td>`;
+        });
+        html += `<td class="bestTotal"><b>${row.total ?? "—"}</b></td></tr>`;
+    });
+    html += `</tbody></table></div><p class="finalsRankingNote">В зачёт идут два лучших результата из A1, A2 и A3. DNF, DNS и DSQ дают 7 очков.</p>`;
+    block.innerHTML = html;
 }
 
 function buildFinalProtocol() {
@@ -461,6 +506,12 @@ function drawFinalProtocol() {
     const block = document.getElementById("protocolBlock");
     if (!section || !block || !RaceData.finalProtocol.length) return;
     section.classList.remove("hidden");
+    const completeButton = document.getElementById("completeRace");
+    if (completeButton) {
+        const completed = RaceData.lifecycleStatus === "completed";
+        completeButton.classList.toggle("hidden", completed);
+        completeButton.disabled = completed;
+    }
     const standings = [...RaceData.pilots].sort(comparePilots);
     const mainStandings = buildMainStandings();
     let html = `<div class="protocolMeta"><strong>${escapeHtml(RaceData.eventName)}</strong><span>${escapeHtml(RaceData.clubName || "")}</span><span>${escapeHtml(RaceData.eventDate || "")} ${escapeHtml(RaceData.eventLocation || "")}</span></div><div class="podium">`;
@@ -468,7 +519,7 @@ function drawFinalProtocol() {
     html += `</div><h3>Итоговая классификация</h3><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th><th>Источник</th><th>Очки этапа</th></tr></thead><tbody>`;
     RaceData.finalProtocol.forEach(item => html += `<tr><td>${item.place}</td><td>${escapeHtml(getPilot(item.pilotId)?.name || "—")}</td><td>${escapeHtml(item.source)}${item.status !== "FIN" ? ` · ${escapeHtml(item.status)}` : ""}</td><td>${item.eventPoints}</td></tr>`);
     html += `</tbody></table></div><h3>Зачёт Финала A</h3><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th><th>A1</th><th>A2</th><th>A3</th><th>Лучшие 2</th></tr></thead><tbody>`;
-    mainStandings.forEach((row, index) => html += `<tr><td>${index + 1}</td><td>${escapeHtml(getPilot(row.pilotId)?.name || "—")}</td><td>${row.scores[0]}</td><td>${row.scores[1]}</td><td>${row.scores[2]}</td><td><b>${row.total}</b></td></tr>`);
+    mainStandings.forEach((row, index) => html += `<tr><td>${index + 1}</td><td>${escapeHtml(getPilot(row.pilotId)?.name || "—")}</td><td>${formatMainStandingScore(row.results[0], row.scores[0])}</td><td>${formatMainStandingScore(row.results[1], row.scores[1])}</td><td>${formatMainStandingScore(row.results[2], row.scores[2])}</td><td><b>${row.total ?? "—"}</b></td></tr>`);
     html += `</tbody></table></div><h3>Квалификационный рейтинг</h3><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th><th>Best 3</th><th>Результаты серий</th></tr></thead><tbody>`;
     standings.forEach((p, i) => html += `<tr><td>${i + 1}</td><td>${escapeHtml(p.name)}</td><td>${p.best3 || 0}</td><td>${(p.qualifying || []).map(q => q.status && q.status !== "FIN" ? q.status : (q.points ?? "—")).join(" · ")}</td></tr>`);
     html += `</tbody></table></div>`;

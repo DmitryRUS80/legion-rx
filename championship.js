@@ -35,7 +35,7 @@ function openChampionship(id){
 function createNextStage(champId){
  const c=getChampionships().find(x=>x.id===champId);if(!c)return; const next=(c.stages.reduce((m,s)=>Math.max(m,s.number),0)||0)+1;
  if(RaceData.id&&RaceData.pilots.length&&!confirm('Текущая гонка будет заменена новым этапом. Продолжить?'))return;
- Object.assign(RaceData,{id:'',eventName:`${c.name} — этап ${next}`,clubName:'Legion RC Penza',eventDate:new Date().toISOString().slice(0,10),eventLocation:'',eventStatus:'championship',championshipId:c.id,championshipStageNumber:next,publishAllowed:true,qualifyingCount:4,pilots:[],heats:[],finals:[],finalProtocol:[],exactTieLots:{},stage:'setup',createdAt:'',updatedAt:''});
+ Object.assign(RaceData,{id:'',eventName:`${c.name} — этап ${next}`,clubName:'Legion RC Penza',eventDate:new Date().toISOString().slice(0,10),eventLocation:'',eventStatus:'championship',championshipId:c.id,championshipStageNumber:next,publishAllowed:true,qualifyingCount:4,pilots:[],heats:[],finals:[],finalProtocol:[],exactTieLots:{},stage:'setup',lifecycleStatus:'active',completedAt:'',createdAt:'',updatedAt:''});
  c.drivers.forEach(d=>{const p=new Pilot(d.name);p.championshipDriverId=d.id;RaceData.pilots.push(p)}); touchRace(); saveToBrowser(); location.reload();
 }
 function syncCurrentRaceToChampionship(){

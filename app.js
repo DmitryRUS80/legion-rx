@@ -91,6 +91,9 @@ function loadFromBrowser() {
     try {
         const parsed = JSON.parse(saved);
         Object.assign(RaceData, parsed);
+        // Старые сохранения до v3.0.3 считаются активными, чтобы их можно было корректно завершить.
+        RaceData.lifecycleStatus = parsed.lifecycleStatus || "active";
+        RaceData.completedAt = parsed.completedAt || "";
         RaceData.exactTieLots = parsed.exactTieLots || {};
         RaceData.pilots = (parsed.pilots || []).map((data, index) => {
             const pilot = Object.assign(new Pilot(data.name), data);
@@ -141,25 +144,45 @@ function getArchive() {
     catch { return []; }
 }
 
-function archiveCurrentRace() {
-    if (typeof syncCurrentRaceToChampionship === "function") syncCurrentRaceToChampionship();
-    if (!RaceData.id || !RaceData.pilots.length) {
-        return alert("Нет текущего соревнования для сохранения.");
-    }
-
+function saveRaceSnapshotToArchive(snapshot) {
     const archive = getArchive();
-    const snapshot = JSON.parse(JSON.stringify(RaceData));
-    snapshot.archivedAt = new Date().toISOString();
-
     const idx = archive.findIndex(item => item.id === snapshot.id);
     if (idx >= 0) archive[idx] = snapshot;
     else archive.unshift(snapshot);
-
     localStorage.setItem("legionRxArchive", JSON.stringify(archive));
-    alert(RaceData.stage === "finished"
-        ? "Завершённое соревнование сохранено в архив."
-        : "Текущая гонка сохранена в архив как незавершённая.");
+}
+
+function archiveCurrentRace() {
+    if (!RaceData.id || !RaceData.pilots.length || RaceData.lifecycleStatus === "completed") {
+        return alert("Нет текущего соревнования для сохранения.");
+    }
+    const snapshot = JSON.parse(JSON.stringify(RaceData));
+    snapshot.archivedAt = new Date().toISOString();
+    saveRaceSnapshotToArchive(snapshot);
     drawArchive();
+}
+
+function completeCurrentRace() {
+    if (!RaceData.id || !RaceData.pilots.length) return alert("Текущей гонки нет.");
+    if (RaceData.stage !== "finished" || !RaceData.finalProtocol.length) {
+        return alert("Сначала завершите все заезды Финала A и сформируйте итоговый протокол.");
+    }
+    if (RaceData.lifecycleStatus === "completed") {
+        return alert("Это соревнование уже завершено и находится в архиве.");
+    }
+    if (!confirm("Завершить соревнование? После завершения этап будет автоматически перенесён в архив и исчезнет с главной страницы.")) return;
+
+    const now = new Date().toISOString();
+    RaceData.lifecycleStatus = "completed";
+    RaceData.completedAt = now;
+    RaceData.archivedAt = now;
+    touchRace();
+
+    if (typeof syncCurrentRaceToChampionship === "function") syncCurrentRaceToChampionship();
+    saveRaceSnapshotToArchive(JSON.parse(JSON.stringify(RaceData)));
+    localStorage.removeItem("legionRxRace");
+    alert("Соревнование завершено и перенесено в архив.");
+    location.reload();
 }
 
 function discardCurrentRace() {
@@ -174,14 +197,18 @@ function discardCurrentRace() {
 }
 
 function startNewRace() {
-    if (RaceData.id && RaceData.pilots.length) {
-        const confirmed = confirm("Начать новую гонку? Текущая гонка будет удалена. При необходимости сначала сохраните её в архив.");
+    if (RaceData.id && RaceData.pilots.length && RaceData.lifecycleStatus !== "completed") {
+        const confirmed = confirm("Начать новую гонку? Текущая незавершённая гонка будет удалена.");
         if (!confirmed) return;
         localStorage.removeItem("legionRxRace");
         location.reload();
         return;
     }
-
+    if (RaceData.lifecycleStatus === "completed") {
+        localStorage.removeItem("legionRxRace");
+        location.reload();
+        return;
+    }
     navigateTo("race", "createSection");
 }
 
@@ -253,8 +280,9 @@ function updateHomeSummary() {
     const card = $("currentRaceCard");
     if (!card) return;
 
-    if (!RaceData.id || !RaceData.pilots.length) {
+    if (!RaceData.id || !RaceData.pilots.length || RaceData.lifecycleStatus === "completed") {
         card.classList.add("hidden");
+        card.innerHTML = "";
         return;
     }
 
@@ -271,14 +299,12 @@ function updateHomeSummary() {
         <p>${RaceData.pilots.length} пилотов · ${stageNames[RaceData.stage] || "Подготовка"} · ${escapeHtml(RaceData.eventDate || "без даты")}</p>
         <div class="currentRaceActions">
             <button class="primaryAction" data-route="race">Продолжить гонку</button>
-            <button class="secondaryButton" id="quickArchiveRace">Сохранить в архив</button>
             <button class="dangerButton" id="cancelCurrentRace">Отменить гонку</button>
         </div>
     `;
 
     card.classList.remove("hidden");
     bindRouteButtons(card);
-    $("quickArchiveRace")?.addEventListener("click", archiveCurrentRace);
     $("cancelCurrentRace")?.addEventListener("click", discardCurrentRace);
 }
 
@@ -335,7 +361,7 @@ $("homeNewRace").addEventListener("click", startNewRace);
 $("archiveFilter").addEventListener("change", drawArchive);
 $("printProtocol").addEventListener("click", printProtocol);
 $("saveProtocolImage").addEventListener("click", exportProtocolPng);
-$("archiveRace").addEventListener("click", archiveCurrentRace);
+$("completeRace")?.addEventListener("click", completeCurrentRace);
 $("openHome").addEventListener("click", () => navigateTo("home"));
 $("showInstallInfo").addEventListener("click", () => {
     const box = $("installHelp");

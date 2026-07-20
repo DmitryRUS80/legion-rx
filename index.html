@@ -10,7 +10,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <title>Legion RX Championship Edition v3.0</title>
-    <link rel="stylesheet" href="style.css?v=3.0.2">
+    <link rel="stylesheet" href="style.css?v=3.0.5">
 </head>
 <body>
 <div class="appShell">
@@ -160,6 +160,10 @@
                 <p class="sectionHint">Финалы формируют стартовую сетку главного заезда и итоговый протокол.</p>
                 <div id="finalsExplanation"></div>
                 <div id="finalsBlock"></div>
+                <div class="standingsPanel finalsStandingsPanel">
+                    <div class="standingsHeader"><div><span>LIVE RANKING</span><h2>Турнирная таблица Финала A</h2></div><b>BEST 2 OF 3</b></div>
+                    <div id="finalsStandings">Состав Финала A появится после завершения отбора.</div>
+                </div>
             </section>
 
             <section id="protocolSection" class="card protocolCard hidden">
@@ -169,7 +173,7 @@
                     <div class="protocolActions">
                         <button id="printProtocol" class="secondaryButton">PDF / Печать</button>
                         <button id="saveProtocolImage" class="secondaryButton">Скачать PNG</button>
-                        <button id="archiveRace" class="secondaryButton">В архив</button>
+                        <button id="completeRace" class="primaryAction">🏁 Завершить соревнование</button>
                     </div>
                 </div>
                 <div id="protocolBlock"></div>
@@ -244,12 +248,12 @@
 
 <footer>Legion RC Penza · RallyCross Manager</footer>
 
-<script src="data.js?v=3.0.2"></script>
-<script src="score.js?v=3.0.2"></script>
-<script src="qualifying.js?v=3.0.2"></script>
-<script src="finals.js?v=3.0.2"></script>
-<script src="championship.js?v=3.0.2"></script>
-<script src="app.js?v=3.0.2"></script>
-<script src="pwa.js?v=3.0.2"></script>
+<script src="data.js?v=3.0.5"></script>
+<script src="score.js?v=3.0.5"></script>
+<script src="qualifying.js?v=3.0.5"></script>
+<script src="finals.js?v=3.0.5"></script>
+<script src="championship.js?v=3.0.5"></script>
+<script src="app.js?v=3.0.5"></script>
+<script src="pwa.js?v=3.0.5"></script>
 </body>
 </html>
