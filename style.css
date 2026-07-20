@@ -380,14 +380,16 @@ button{
 .startGridName{max-width:170px;margin-top:8px;text-align:center;font-size:12px;font-weight:750;line-height:1.25;overflow-wrap:anywhere}
 @media(max-width:620px){.startGrid{grid-template-columns:repeat(2,minmax(105px,145px));gap:25px 20px}.startBracket{width:70px;height:15px;margin-bottom:7px;border-width:2px}.startGridCar{width:48px;height:76px}.startGridName{font-size:11px}}
 
-/* v3.0.1 — official staggered Final A grid: each following row is shifted right */
-.rxFinalRows{align-items:center;overflow:visible;padding-right:96px}
+/* v3.0.2 — clear chessboard stagger for the Final A manual grid */
+/* One row pitch is 58px car + 96px gap = 154px; every next row moves by half a pitch. */
+.rxFinalRows{align-items:center;overflow:visible;padding-right:152px}
 .rxFinalRow.rowOne{transform:translateX(0)}
-.rxFinalRow.rowTwo{transform:translateX(48px)}
-.rxFinalRow.rowThree{transform:translateX(96px)}
+.rxFinalRow.rowTwo{transform:translateX(77px)}
+.rxFinalRow.rowThree{transform:translateX(154px)}
 @media(max-width:620px){
- .rxFinalRows{padding-right:56px}
+ /* Mobile pitch: 44px car + 66px gap = 110px; half-pitch stagger = 55px. */
+ .rxFinalRows{padding-right:110px}
  .rxFinalRow.rowOne{transform:translateX(0)}
- .rxFinalRow.rowTwo{transform:translateX(28px)}
- .rxFinalRow.rowThree{transform:translateX(56px)}
+ .rxFinalRow.rowTwo{transform:translateX(55px)}
+ .rxFinalRow.rowThree{transform:translateX(110px)}
 }
