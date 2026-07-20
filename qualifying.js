@@ -1,4 +1,4 @@
-/* Legion RallyCross Manager v2.3 */
+/* Legion RX Championship Edition v3.0 */
 
 function getHeatCount(pilotCount) {
     if (pilotCount <= 6) return 1;

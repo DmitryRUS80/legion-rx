@@ -1,4 +1,4 @@
-/* Legion RallyCross Manager v2.3 */
+/* Legion RX Championship Edition v3.0 */
 
 const SCORE_TABLE = [50,45,42,40,39,38,37,36,35,34,33,32,31,30,29,28];
 

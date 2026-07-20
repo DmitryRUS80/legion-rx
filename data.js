@@ -1,4 +1,4 @@
-/* Legion RallyCross Manager v2.3 */
+/* Legion RX Championship Edition v3.0 */
 
 const RaceData = {
     id: "",

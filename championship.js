@@ -1,4 +1,4 @@
-/* Legion RX v2.4 — championships */
+/* Legion RX Championship Edition v3.0 — championships */
 const CHAMPIONSHIP_KEY = "legionRxChampionshipsV24";
 function getChampionships(){try{return JSON.parse(localStorage.getItem(CHAMPIONSHIP_KEY)||"[]")}catch{return []}}
 function saveChampionships(items){localStorage.setItem(CHAMPIONSHIP_KEY,JSON.stringify(items)); refreshChampionshipSelectors();}
