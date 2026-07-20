@@ -368,3 +368,14 @@ button{
  .rxRuleCards{grid-template-columns:1fr}
  .rxGridOrder>div{grid-template-columns:1fr;gap:5px}
 }
+
+/* v3.0 — fixed RC starting boxes: bracket is separate and never touches the car */
+.rxCar{margin-top:30px!important;width:58px!important;height:92px!important;aspect-ratio:auto!important;border-radius:3px!important}
+.rxCar i{display:block!important;position:absolute!important;left:-11px!important;right:-11px!important;top:-22px!important;height:14px!important;border:0!important;border-top:3px solid #d9dde2!important;border-left:3px solid #d9dde2!important;border-right:3px solid #d9dde2!important;border-radius:0!important;background:transparent!important;box-sizing:border-box!important}
+.rxCar.pole i{border-color:#ff343d!important}
+.finalRow{margin:40px 0 18px}
+.finalSlot{position:relative;width:116px;min-height:92px;padding:14px 8px;border-radius:4px}
+.finalSlot:before{display:none}
+.slotBracket{position:absolute;left:-10px;right:-10px;top:-23px;height:15px;border-top:3px solid #d9dde2;border-left:3px solid #d9dde2;border-right:3px solid #d9dde2;box-sizing:border-box;pointer-events:none}
+.finalPlace{font-size:25px}.finalPilot{font-size:12px;line-height:1.25}
+@media(max-width:620px){.rxCar{margin-top:26px!important;width:44px!important;height:72px!important}.rxCar i{left:-9px!important;right:-9px!important;top:-19px!important;height:11px!important;border-width:2px!important}.finalSlot{width:105px;min-height:82px}.slotBracket{left:-8px;right:-8px;top:-20px;height:12px;border-width:2px}.finalRow{gap:28px;margin-top:35px}}
