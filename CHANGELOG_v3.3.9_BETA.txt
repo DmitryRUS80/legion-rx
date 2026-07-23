@@ -1,0 +1,12 @@
+LEGION RX CHAMPIONSHIP EDITION v3.3.9 BETA
+
+LIGHT THEME AUDIT
+- Completed a full light-theme inversion pass across the application.
+- Fixed low-contrast text in the sporting regulations and race guide.
+- Converted previously dark pilot, qualifying, final, archive and modal rows to light surfaces.
+- Fixed qualification and Best 3 tables: dark zebra rows and pale text are removed in light mode.
+- Inverted guide diagrams, start grids, rule cards, forms and nested panels.
+- Unified borders, muted text and disabled controls against the light Main menu reference.
+- Preserved red action buttons and red sporting accents.
+- Dark theme, race logic and saved-data structure are unchanged.
+- PWA cache updated to v3.3.9.

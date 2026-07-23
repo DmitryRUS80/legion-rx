@@ -1,0 +1,11 @@
+LEGION RX CHAMPIONSHIP EDITION v3.4
+
+OFFICIAL RELEASE
+
+- Stable release based on v3.3.11 Beta.
+- The last entered race location is remembered and offered for the next race.
+- Added contextual PWA installation instructions for iPhone/iPad, Android and Windows/macOS.
+- Added platform detection for installation help.
+- Synchronized the version number across the interface, browser title, web app manifest, asset cache keys and service worker registration.
+- Updated the PWA cache to v3.4.
+- Existing pilots, races, championships and archive data remain compatible.

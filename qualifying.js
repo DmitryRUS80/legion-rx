@@ -146,16 +146,29 @@ function renderQualifying() {
 
         roundHeats.forEach(heatData => {
             const pilots = heatData.pilots.map(getPilot).filter(Boolean);
-            html += `<div class="heatCard"><div class="heatHeader"><h3>Заезд ${heatData.heat}</h3><span>${pilots.length} пилотов</span></div><div class="tableWrap"><table><thead><tr><th>Результат</th><th>Пилот</th></tr></thead><tbody>`;
+            html += `<div class="heatCard"><div class="heatHeader"><h3>Заезд ${heatData.heat}</h3><span>${pilots.length} пилотов</span></div><div class="qualifyingPilotList">`;
 
-            pilots.forEach(pilot => {
+            pilots.forEach((pilot, pilotIndex) => {
                 const saved = pilot.qualifying.find(result => result.round === round);
                 const value = saved ? (saved.status === "FIN" ? saved.place : saved.status) : "";
                 const dnfOrder = saved?.dnfOrder || "";
-                html += `<tr><td><div class="resultControl"><select class="finishPlace" data-id="${pilot.id}" data-q="${round}" data-heat="${heatData.heat}" ${heatData.saved ? "disabled" : ""}>${resultOptions(pilots.length, value)}</select><select class="dnfOrder ${value === "DNF" ? "" : "hidden"}" data-id="${pilot.id}" data-q="${round}" data-heat="${heatData.heat}" ${heatData.saved || value !== "DNF" ? "disabled" : ""}>${dnfOrderOptions(pilots.length, dnfOrder)}</select></div></td><td>${escapeHtml(pilot.name)}</td></tr>`;
+                html += `<div class="qualifyingPilotRow">
+                    <div class="qualifyingPilotIdentity">
+                        <div class="qualifyingPilotNumber">${pilotIndex + 1}</div>
+                        <div class="pilotRowPhoto qualifyingPilotPhoto">${pilotPhotoMarkup(pilot.photo, pilot.name)}</div>
+                        <div class="pilotRowInfo qualifyingPilotInfo"><b>${escapeHtml(pilot.name)}</b>${pilotClubMarkup(pilot.club)}</div>
+                    </div>
+                    <div class="qualifyingResultSide">
+                        <label class="qualifyingResultLabel" for="q${round}h${heatData.heat}p${pilot.id}">Место</label>
+                        <div class="resultControl">
+                            <select id="q${round}h${heatData.heat}p${pilot.id}" class="finishPlace" data-id="${pilot.id}" data-q="${round}" data-heat="${heatData.heat}" ${heatData.saved ? "disabled" : ""}>${resultOptions(pilots.length, value)}</select>
+                            <select class="dnfOrder ${value === "DNF" ? "" : "hidden"}" data-id="${pilot.id}" data-q="${round}" data-heat="${heatData.heat}" ${heatData.saved || value !== "DNF" ? "disabled" : ""}>${dnfOrderOptions(pilots.length, dnfOrder)}</select>
+                        </div>
+                    </div>
+                </div>`;
             });
 
-            html += `</tbody></table></div><div class="heatActions"><button id="save_q${round}_h${heatData.heat}" onclick="saveHeat(${round},${heatData.heat})" ${heatData.saved ? "disabled" : ""}>${heatData.saved ? "✔ Заезд сохранён" : "Сохранить заезд"}</button>${heatData.saved ? `<button class="secondaryButton editResultButton" onclick="editHeat(${round},${heatData.heat})">Исправить результат</button>` : ""}</div></div>`;
+            html += `</div><div class="heatActions"><button id="save_q${round}_h${heatData.heat}" onclick="saveHeat(${round},${heatData.heat})" ${heatData.saved ? "disabled" : ""}>${heatData.saved ? "✔ Заезд сохранён" : "Сохранить заезд"}</button>${heatData.saved ? `<button class="secondaryButton editResultButton" onclick="editHeat(${round},${heatData.heat})">Исправить результат</button>` : ""}</div></div>`;
         });
 
         content.insertAdjacentHTML("beforeend", `${html}</section>`);

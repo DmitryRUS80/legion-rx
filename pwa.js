@@ -6,7 +6,7 @@
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', async () => {
             try {
-                const registration = await navigator.serviceWorker.register('./sw.js?v=3.0.5', {
+                const registration = await navigator.serviceWorker.register('./sw.js?v=3.4', {
                     updateViaCache: 'none'
                 });
                 await registration.update();

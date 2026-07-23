@@ -26,9 +26,13 @@ const RaceData = {
 const EVENT_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 
 class Pilot {
-    constructor(name) {
+    constructor(name, profile = {}) {
         this.id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
         this.name = name;
+        this.profileId = profile.profileId || profile.id || "";
+        this.photo = profile.photo || "";
+        this.club = profile.club || "";
+        this.city = profile.city || "";
         this.registrationOrder = RaceData.pilots.length + 1;
         this.qualifying = [];
         this.best3 = 0;
@@ -37,8 +41,8 @@ class Pilot {
     }
 }
 
-function addPilot(name) {
-    RaceData.pilots.push(new Pilot(name));
+function addPilot(name, profile = {}) {
+    RaceData.pilots.push(new Pilot(name, profile));
 }
 
 function removePilot(id) {

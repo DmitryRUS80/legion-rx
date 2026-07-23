@@ -172,7 +172,7 @@ function buildGridHtml(pilots) {
     if (!pilots.length) return `<div class="emptyGrid">Состав появится после завершения отборочных заездов.</div>`;
     let html = `<div class="startDirection">НАПРАВЛЕНИЕ ДВИЖЕНИЯ ↑</div><div class="finalGrid startGrid">`;
     pilots.forEach((pilot, index) => {
-        html += `<div class="startGridEntry"><div class="startBracket" aria-hidden="true"></div><div class="startGridCar ${index === 0 ? "pole" : ""}"><b>${index + 1}</b></div><div class="startGridName">${escapeHtml(pilot.name)}</div></div>`;
+        html += `<div class="startGridEntry"><div class="startBracket" aria-hidden="true"></div><div class="startGridPhoto ${index === 0 ? "pole" : ""}">${pilotPhotoMarkup(pilot.photo, pilot.name)}<span class="startGridPosition">${index + 1}</span></div><div class="startGridName">${escapeHtml(pilot.name)}</div></div>`;
     });
     return `${html}</div>`;
 }
@@ -235,14 +235,14 @@ function drawFinals() {
         const rule = getFinalRule(final);
         let html = `<article class="finalCard ${final.enabled ? "activeFinal" : "lockedFinal"}"><div class="finalTitleRow"><div><h2>${escapeHtml(final.label || final.name)}</h2><div class="finalSubtitle">${rule.title}</div></div><span class="statusBadge">${final.saved ? "Завершён" : final.enabled ? "Готов" : "Ожидает"}</span></div><div class="finalRuleBox"><strong>${rule.advance}</strong><span>${rule.text}</span></div>${buildGridHtml(pilots)}`;
         if (!final.saved && pilots.length) {
-            html += `<div class="finishInputTitle">Введите порядок финиша</div><div class="tableWrap"><table><thead><tr><th>Результат</th><th>Пилот</th></tr></thead><tbody>`;
-            pilots.forEach(pilot => {
-                html += `<tr><td><div class="resultControl"><select class="finalPlaceSelect" data-final="${final.name}" data-id="${pilot.id}" ${!final.enabled ? "disabled" : ""}>${finalOptions(pilots.length)}</select><select class="finalDnfOrder hidden" data-final="${final.name}" data-id="${pilot.id}" disabled>${finalDnfOrderOptions(pilots.length)}</select></div></td><td>${escapeHtml(pilot.name)}</td></tr>`;
+            html += `<div class="finishInputTitle">Введите порядок финиша</div><div class="finalPilotList">`;
+            pilots.forEach((pilot, pilotIndex) => {
+                html += `<div class="finalPilotRow"><div class="finalPilotLeft">${pilotFinalRowMarkup(pilot, pilotIndex)}</div><div class="finalResultSide"><label class="qualifyingResultLabel" for="f${final.name}p${pilot.id}">Место</label><div class="resultControl"><select id="f${final.name}p${pilot.id}" class="finalPlaceSelect" data-final="${final.name}" data-id="${pilot.id}" ${!final.enabled ? "disabled" : ""}>${finalOptions(pilots.length)}</select><select class="finalDnfOrder hidden" data-final="${final.name}" data-id="${pilot.id}" disabled>${finalDnfOrderOptions(pilots.length)}</select></div></div></div>`;
             });
-            html += `</tbody></table></div><button class="finalButton" onclick="saveFinal('${final.name}')" ${!final.enabled ? "disabled" : ""}>Сохранить ${escapeHtml(final.label || final.name)}</button>`;
+            html += `</div><button class="finalButton" onclick="saveFinal('${final.name}')" ${!final.enabled ? "disabled" : ""}>Сохранить ${escapeHtml(final.label || final.name)}</button>`;
         } else if (final.saved) {
             html += `<div class="savedFinalResult"><h3>Результат</h3>`;
-            final.result.forEach((item, index) => html += `<div class="savedResultRow"><span class="resultPosition">${formatFinalResultPosition(item, index)}</span><span class="resultPilot">${escapeHtml(getPilot(item.pilotId)?.name || "Удалённый пилот")}</span></div>`);
+            final.result.forEach((item, index) => { const pilot = getPilot(item.pilotId); html += `<div class="savedResultRow">${pilotFinalRowMarkup(pilot)}<span class="resultPosition">${formatFinalResultPosition(item, index)}</span></div>`; });
             html += `<button class="secondaryButton editResultButton" onclick="editFinal('${final.name}')">Исправить результат</button></div>`;
         }
         block.insertAdjacentHTML("beforeend", `${html}</article>`);
@@ -446,7 +446,7 @@ function drawFinalsStandings() {
             const candidates = row.scores.map((value, i) => ({ value, i })).filter(item => Number.isFinite(item.value)).sort((a, b) => a.value - b.value || a.i - b.i).slice(0, 2);
             if (candidates.some(item => item.i === scoreIndex)) counted.add(scoreIndex);
         });
-        html += `<tr><td>${index + 1}</td><td>${escapeHtml(getPilot(row.pilotId)?.name || "—")}</td>`;
+        html += `<tr><td>${index + 1}</td><td>${pilotTableMarkup(getPilot(row.pilotId))}</td>`;
         row.scores.forEach((score, scoreIndex) => {
             html += `<td class="${counted.has(scoreIndex) ? "bestScoreCell" : ""}">${formatMainStandingScore(row.results[scoreIndex], score)}</td>`;
         });
@@ -515,13 +515,13 @@ function drawFinalProtocol() {
     const standings = [...RaceData.pilots].sort(comparePilots);
     const mainStandings = buildMainStandings();
     let html = `<div class="protocolMeta"><strong>${escapeHtml(RaceData.eventName)}</strong><span>${escapeHtml(RaceData.clubName || "")}</span><span>${escapeHtml(RaceData.eventDate || "")} ${escapeHtml(RaceData.eventLocation || "")}</span></div><div class="podium">`;
-    RaceData.finalProtocol.slice(0, 3).forEach(item => html += `<div class="podiumPlace place${item.place}"><span>${item.place}</span>${escapeHtml(getPilot(item.pilotId)?.name || "—")}</div>`);
+    RaceData.finalProtocol.slice(0, 3).forEach(item => { const pilot=getPilot(item.pilotId); html += `<div class="podiumPlace place${item.place}"><span>${item.place}</span><div class="podiumPhoto">${pilotPhotoMarkup(pilot?.photo || "", pilot?.name || "Пилот")}</div><b>${escapeHtml(pilot?.name || "—")}</b></div>`; });
     html += `</div><h3>Итоговая классификация</h3><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th><th>Источник</th><th>Очки этапа</th></tr></thead><tbody>`;
-    RaceData.finalProtocol.forEach(item => html += `<tr><td>${item.place}</td><td>${escapeHtml(getPilot(item.pilotId)?.name || "—")}</td><td>${escapeHtml(item.source)}${item.status !== "FIN" ? ` · ${escapeHtml(item.status)}` : ""}</td><td>${item.eventPoints}</td></tr>`);
+    RaceData.finalProtocol.forEach(item => html += `<tr><td>${item.place}</td><td>${pilotTableMarkup(getPilot(item.pilotId))}</td><td>${escapeHtml(item.source)}${item.status !== "FIN" ? ` · ${escapeHtml(item.status)}` : ""}</td><td>${item.eventPoints}</td></tr>`);
     html += `</tbody></table></div><h3>Зачёт Финала A</h3><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th><th>A1</th><th>A2</th><th>A3</th><th>Лучшие 2</th></tr></thead><tbody>`;
-    mainStandings.forEach((row, index) => html += `<tr><td>${index + 1}</td><td>${escapeHtml(getPilot(row.pilotId)?.name || "—")}</td><td>${formatMainStandingScore(row.results[0], row.scores[0])}</td><td>${formatMainStandingScore(row.results[1], row.scores[1])}</td><td>${formatMainStandingScore(row.results[2], row.scores[2])}</td><td><b>${row.total ?? "—"}</b></td></tr>`);
+    mainStandings.forEach((row, index) => html += `<tr><td>${index + 1}</td><td>${pilotTableMarkup(getPilot(row.pilotId))}</td><td>${formatMainStandingScore(row.results[0], row.scores[0])}</td><td>${formatMainStandingScore(row.results[1], row.scores[1])}</td><td>${formatMainStandingScore(row.results[2], row.scores[2])}</td><td><b>${row.total ?? "—"}</b></td></tr>`);
     html += `</tbody></table></div><h3>Квалификационный рейтинг</h3><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th><th>Best 3</th><th>Результаты серий</th></tr></thead><tbody>`;
-    standings.forEach((p, i) => html += `<tr><td>${i + 1}</td><td>${escapeHtml(p.name)}</td><td>${p.best3 || 0}</td><td>${(p.qualifying || []).map(q => q.status && q.status !== "FIN" ? q.status : (q.points ?? "—")).join(" · ")}</td></tr>`);
+    standings.forEach((p, i) => html += `<tr><td>${i + 1}</td><td>${pilotTableMarkup(p)}</td><td>${p.best3 || 0}</td><td>${(p.qualifying || []).map(q => q.status && q.status !== "FIN" ? q.status : (q.points ?? "—")).join(" · ")}</td></tr>`);
     html += `</tbody></table></div>`;
     block.innerHTML = html;
     section.scrollIntoView({ behavior: "smooth", block: "start" });

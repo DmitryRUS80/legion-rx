@@ -206,7 +206,7 @@ function drawStandings() {
         const bestRounds = new Set(getBest3Results(pilot).map(result => result.round));
         const tied = getExactTieGroups().some(group => group.some(item => String(item.id) === String(pilot.id)));
         const lot = RaceData.exactTieLots?.[String(pilot.id)];
-        html += `<tr><td>${index + 1}</td><td><strong>${escapeHtml(pilot.name)}</strong>${tied ? `<small class="tieMark">${Number.isInteger(lot) ? `жребий №${lot}` : "абсолютное равенство"}</small>` : ""}</td>`;
+        html += `<tr><td>${index + 1}</td><td>${pilotTableMarkup(pilot)}${tied ? `<small class="tieMark">${Number.isInteger(lot) ? `жребий №${lot}` : "абсолютное равенство"}</small>` : ""}</td>`;
         for (let round = 1; round <= RaceData.qualifyingCount; round += 1) {
             const result = pilot.qualifying.find(item => item.round === round);
             const winnerClass = result?.status === "FIN" && result.place === 1 ? "roundWinner" : "";

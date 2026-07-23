@@ -1,0 +1,10 @@
+Legion RX v3.3.8 Beta
+
+- Restored all unified SVG icons from v3.3.6 UI Polish.
+- Fixed blank icon containers on the home screen and bottom navigation.
+- Kept the original dark RX Red theme.
+- Removed Track Blue and Carbon Gold themes.
+- Added a light inverted theme with red action buttons preserved.
+- Language selector keeps Russian and English flags.
+- Updated PWA cache to v3.3.8.
+- Race logic and saved user data structure were not changed.

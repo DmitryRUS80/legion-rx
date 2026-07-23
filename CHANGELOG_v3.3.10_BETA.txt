@@ -1,0 +1,8 @@
+Legion RX Championship Edition v3.3.10 Beta
+
+- Completed the light-theme inversion across the race guide.
+- Removed remaining dark pilot rows in the permanent database and race registration.
+- Restored the light-theme brand mark: dark LEGION + red RX.
+- Restored branded LEGION RX club labels in pilot cards.
+- Reworked guide tabs, rules cards, progression diagram and event-points cards for readable light-theme contrast.
+- No changes to stored race, archive or pilot data structures.

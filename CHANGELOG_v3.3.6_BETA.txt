@@ -1,0 +1,12 @@
+LEGION RX CHAMPIONSHIP EDITION — v3.3.6 BETA
+
+UI POLISH: UNIFIED ICON SYSTEM
+
+- Replaced mixed emoji/symbol icons with one coherent inline SVG icon set.
+- Kept the championship trophy gold as the branded exception.
+- Enlarged menu and navigation icons by approximately 20%.
+- Added clearer icons for race, qualifying, finals, results, drivers, archive and settings.
+- Replaced pilot placeholder with a racing helmet.
+- Replaced camera, gallery, remove-photo and close symbols with matching SVG icons.
+- No race logic, saved-data structure, pilot database or archive logic was changed.
+- Updated PWA cache to v3.3.6 Beta.

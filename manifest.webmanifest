@@ -1,8 +1,8 @@
 {
-  "name": "Legion RX Championship Edition v3.0",
+  "name": "Legion RX Championship Edition v3.4",
   "short_name": "Legion RX",
   "description": "Менеджер этапов, чемпионатов, квалификаций и финалов RC RallyCross",
-  "lang": "ru",
+  "lang": "ru-RU",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

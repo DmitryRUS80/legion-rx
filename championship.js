@@ -28,7 +28,7 @@ function openChampionship(id){
  let html=`<div class="sectionTitleRow"><div><div class="cardLabel">${c.season}</div><h2>${escapeHtml(c.name)}</h2><p class="sectionHint">${c.drivers.length} пилотов · ${stages.length}/${c.plannedStages} этапов</p></div><button class="primaryAction" onclick="createNextStage('${c.id}')">+ Следующий этап</button></div>`;
  html+=`<h3>Этапы</h3><div class="champStageGrid">${stages.length?stages.map(s=>`<article class="champStageCard"><b>Этап ${s.number}</b><span>${escapeHtml(s.name||'Без названия')}</span><small>${escapeHtml(s.date||'без даты')} · ${s.status==='finished'?'Завершён':'В работе'}</small>${s.raceId?`<button onclick="openChampionshipStage('${c.id}','${s.raceId}')">Открыть</button>`:''}</article>`).join(''):'<p class="sectionHint">Этапов ещё нет.</p>'}</div>`;
  html+='<h3>Общий зачёт</h3><div class="tableWrap"><table><thead><tr><th>Место</th><th>Пилот</th>'+stages.map(s=>`<th>Э${s.number}</th>`).join('')+'<th>Всего</th></tr></thead><tbody>';
- standings.forEach((r,i)=>html+=`<tr><td>${i+1}</td><td>${escapeHtml(r.name)}</td>${stages.map(s=>`<td>${r.stagePoints[s.number]??'—'}</td>`).join('')}<td><b>${r.total}</b></td></tr>`);
+ standings.forEach((r,i)=>html+=`<tr><td>${i+1}</td><td>${pilotTableMarkup(r)}</td>${stages.map(s=>`<td>${r.stagePoints[s.number]??'—'}</td>`).join('')}<td><b>${r.total}</b></td></tr>`);
  html+='</tbody></table></div><div class="protocolActions championshipExportActions"><button class="secondaryButton" onclick="printChampionshipProtocol()">PDF / Печать</button><button class="primaryAction" onclick="exportChampionshipPng()">Сохранить PNG для соцсетей</button></div>';
  detail.innerHTML=html; detail.dataset.championshipId=id; detail.scrollIntoView({behavior:'smooth'});
 }
@@ -36,11 +36,11 @@ function createNextStage(champId){
  const c=getChampionships().find(x=>x.id===champId);if(!c)return; const next=(c.stages.reduce((m,s)=>Math.max(m,s.number),0)||0)+1;
  if(RaceData.id&&RaceData.pilots.length&&!confirm('Текущая гонка будет заменена новым этапом. Продолжить?'))return;
  Object.assign(RaceData,{id:'',eventName:`${c.name} — этап ${next}`,clubName:'Legion RC Penza',eventDate:new Date().toISOString().slice(0,10),eventLocation:'',eventStatus:'championship',championshipId:c.id,championshipStageNumber:next,publishAllowed:true,qualifyingCount:4,pilots:[],heats:[],finals:[],finalProtocol:[],exactTieLots:{},stage:'setup',lifecycleStatus:'active',completedAt:'',createdAt:'',updatedAt:''});
- c.drivers.forEach(d=>{const p=new Pilot(d.name);p.championshipDriverId=d.id;RaceData.pilots.push(p)}); touchRace(); saveToBrowser(); location.reload();
+ c.drivers.forEach(d=>{const p=new Pilot(d.name);p.championshipDriverId=d.id;p.photo=d.photo||'';RaceData.pilots.push(p)}); touchRace(); saveToBrowser(); location.reload();
 }
 function syncCurrentRaceToChampionship(){
  if(RaceData.eventStatus!=='championship'||!RaceData.championshipId)return; const list=getChampionships(); const c=list.find(x=>x.id===RaceData.championshipId);if(!c)return;
- RaceData.pilots.forEach(p=>{let d=c.drivers.find(x=>x.id===p.championshipDriverId)||c.drivers.find(x=>x.name.toLowerCase()===p.name.toLowerCase());if(!d){d={id:`driver-${Date.now()}-${Math.random().toString(16).slice(2)}`,name:p.name};c.drivers.push(d)}p.championshipDriverId=d.id});
+ RaceData.pilots.forEach(p=>{let d=c.drivers.find(x=>x.id===p.championshipDriverId)||c.drivers.find(x=>x.name.toLowerCase()===p.name.toLowerCase());if(!d){d={id:`driver-${Date.now()}-${Math.random().toString(16).slice(2)}`,name:p.name,photo:p.photo||''};c.drivers.push(d)}else if(p.photo)d.photo=p.photo;p.championshipDriverId=d.id});
  const results=(RaceData.finalProtocol||[]).map(r=>{const p=getPilot(r.pilotId);return{driverId:p?.championshipDriverId,name:p?.name||'',place:r.place,points:r.eventPoints,status:r.status}});
  const stage={number:Number(RaceData.championshipStageNumber)||1,raceId:RaceData.id,name:RaceData.eventName,date:RaceData.eventDate,status:RaceData.stage,results}; const i=c.stages.findIndex(s=>s.number===stage.number);if(i>=0)c.stages[i]=stage;else c.stages.push(stage); saveChampionships(list); saveToBrowser();
 }
